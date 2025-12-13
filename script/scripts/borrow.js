@@ -1,4 +1,4 @@
-const BACKEND_URL = 'https://digital-library-backend-render.onrender.com';
+const BACKEND_URL = 'https://ibooks-digital-library-backend.onrender.com';
 
 document.addEventListener('DOMContentLoaded', function () {
     const token = auth.getToken();
@@ -321,7 +321,7 @@ async function returnBook(borrowId) {
     }
 
     try {
-        const response = await fetch(`${BACKEND_URL}/return/${borrowId}`, {
+        const response = await fetch(`${BACKEND_URL}/return-borrow/${borrowId}`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,

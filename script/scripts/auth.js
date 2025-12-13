@@ -1,4 +1,4 @@
-const BACKEND_URL = 'https://digital-library-backend-render.onrender.com';
+const BACKEND_URL = 'https://ibooks-digital-library-backend.onrender.com';
 
 let authModal;
 let currentUser = null;
