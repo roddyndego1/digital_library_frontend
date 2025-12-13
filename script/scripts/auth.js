@@ -7,7 +7,25 @@ document.addEventListener('DOMContentLoaded', function () {
     authModal = document.getElementById('authModal');
     setupAuthListeners();
     checkAuthStatus();
+    testBackendConnection();
 });
+
+async function testBackendConnection() {
+    try {
+        const response = await fetch(`${BACKEND_URL}/test-db`);
+        const data = await response.json();
+        console.log('Backend connection test:', data);
+    } catch (error) {
+        console.error('Backend connection failed:', error);
+        // Show a warning if backend is not reachable
+        const loginMessage = document.getElementById('loginMessage');
+        const registerMessage = document.getElementById('registerMessage');
+        if (loginMessage && !loginMessage.textContent) {
+            loginMessage.textContent = 'Warning: Cannot reach backend server. Please check your connection.';
+            loginMessage.style.color = 'orange';
+        }
+    }
+}
 
 function setupAuthListeners() {
     const logoutBtn = document.getElementById('logoutBtn');
@@ -125,12 +143,29 @@ async function handleLogin(e) {
             body: JSON.stringify({ email, password })
         });
 
-        const data = await response.json();
+        let data;
+        try {
+            data = await response.json();
+        } catch (jsonError) {
+            // If response is not JSON, try to get text
+            const text = await response.text();
+            messageElement.textContent = `Server error: ${response.status} ${response.statusText}. ${text || 'Please try again.'}`;
+            messageElement.style.color = 'red';
+            console.error('Login error:', response.status, text);
+            return;
+        }
 
         if (response.ok) {
+            if (!data.token) {
+                messageElement.textContent = 'Login failed: No token received';
+                messageElement.style.color = 'red';
+                return;
+            }
+
             localStorage.setItem('token', data.token);
             localStorage.setItem('user', JSON.stringify({
                 email: email,
+                name: data.name || email.split('@')[0],
                 role: data.role,
                 userId: data.userId
             }));
@@ -148,7 +183,8 @@ async function handleLogin(e) {
             messageElement.style.color = 'red';
         }
     } catch (error) {
-        messageElement.textContent = 'Error connecting to server. Please try again.';
+        console.error('Login error:', error);
+        messageElement.textContent = `Error connecting to server: ${error.message}. Please check your connection and try again.`;
         messageElement.style.color = 'red';
     }
 }
@@ -182,7 +218,17 @@ async function handleRegister(e) {
             body: JSON.stringify({ name, email, password })
         });
 
-        const data = await response.json();
+        let data;
+        try {
+            data = await response.json();
+        } catch (jsonError) {
+            // If response is not JSON, try to get text
+            const text = await response.text();
+            messageElement.textContent = `Server error: ${response.status} ${response.statusText}. ${text || 'Please try again.'}`;
+            messageElement.style.color = 'red';
+            console.error('Registration error:', response.status, text);
+            return;
+        }
 
         if (response.ok) {
             await autoLoginAfterRegistration(email, password, messageElement);
@@ -191,7 +237,8 @@ async function handleRegister(e) {
             messageElement.style.color = 'red';
         }
     } catch (error) {
-        messageElement.textContent = 'Error connecting to server. Please try again.';
+        console.error('Registration error:', error);
+        messageElement.textContent = `Error connecting to server: ${error.message}. Please check your connection and try again.`;
         messageElement.style.color = 'red';
     }
 }
@@ -206,12 +253,21 @@ async function autoLoginAfterRegistration(email, password, messageElement) {
             body: JSON.stringify({ email, password })
         });
 
-        const loginData = await loginResponse.json();
+        let loginData;
+        try {
+            loginData = await loginResponse.json();
+        } catch (jsonError) {
+            messageElement.textContent = 'Registration successful! Please login.';
+            messageElement.style.color = 'green';
+            switchAuthTab('login');
+            return;
+        }
 
-        if (loginResponse.ok) {
+        if (loginResponse.ok && loginData.token) {
             localStorage.setItem('token', loginData.token);
             localStorage.setItem('user', JSON.stringify({
                 email: email,
+                name: loginData.name || email.split('@')[0],
                 role: loginData.role,
                 userId: loginData.userId
             }));
@@ -219,7 +275,8 @@ async function autoLoginAfterRegistration(email, password, messageElement) {
             updateAuthUI(loginData.role);
             
             if (authModal) authModal.style.display = 'none';
-            document.getElementById('registerForm').reset();
+            const registerForm = document.getElementById('registerForm');
+            if (registerForm) registerForm.reset();
             messageElement.textContent = '';
             
             showNavbar();
@@ -229,6 +286,7 @@ async function autoLoginAfterRegistration(email, password, messageElement) {
             switchAuthTab('login');
         }
     } catch (error) {
+        console.error('Auto-login error:', error);
         messageElement.textContent = 'Registration successful! Please login.';
         messageElement.style.color = 'green';
         switchAuthTab('login');
