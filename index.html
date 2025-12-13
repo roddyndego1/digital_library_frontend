@@ -4,18 +4,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ACity Digital Library</title>
-  <link rel="stylesheet" href="css/styles/style.css">
+  <title>iBooks Digital Library</title>
+  <link rel="stylesheet" href="css/styles/base.css">
+  <link rel="stylesheet" href="css/styles/index.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 
 <body>
-  <!-- Navigation Bar -->
   <nav class="navbar">
     <div class="nav-container">
       <div class="logo">
         <i class="fas fa-book"></i>
-        <h1>ACity Digital Library</h1>
+        <h1>iBooks Digital Library</h1>
       </div>
       <div class="nav-links">
         <a href="index.html" class="active">Home</a>
@@ -31,7 +31,6 @@
     </div>
   </nav>
 
-  <!-- Login Modal -->
   <div id="loginModal" class="modal">
     <div class="modal-content">
       <span class="close">&times;</span>
@@ -45,7 +44,6 @@
     </div>
   </div>
 
-  <!-- Register Modal -->
   <div id="registerModal" class="modal">
     <div class="modal-content">
       <span class="close">&times;</span>
@@ -60,7 +58,6 @@
     </div>
   </div>
 
-  <!-- Hero Section -->
   <section class="hero">
     <div class="hero-content">
       <h2>Welcome to ACity Digital Library</h2>
@@ -83,11 +80,9 @@
     </div>
   </section>
 
-  <!-- Books Section -->
   <section id="books" class="books-section">
     <h2>Book Catalogue</h2>
     <div id="booksContainer" class="books-grid">
-      <!-- Books will be loaded here dynamically -->
     </div>
     <div id="loading" class="loading">
       <i class="fas fa-spinner fa-spin"></i> Loading books...
@@ -97,7 +92,6 @@
     </div>
   </section>
 
-  <!-- Footer -->
   <footer>
     <p>&copy; 2025 ACity University Digital Library Catalogue | Created by Reginald Justin Tetteh Nabrah</p>
     <p>Backend: <span id="backendStatus">Checking...</span></p>

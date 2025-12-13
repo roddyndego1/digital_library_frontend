@@ -1,20 +1,14 @@
-// Backend URL - UPDATE THIS WITH YOUR RENDER BACKEND URL
 const BACKEND_URL = 'https://digital-library-backend-render.onrender.com';
 
-// DOM Elements
 let loginModal, registerModal;
 let currentUser = null;
 
-// Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function () {
-    // Get modal elements if they exist
     loginModal = document.getElementById('loginModal');
     registerModal = document.getElementById('registerModal');
 
-    // Setup event listeners for auth buttons
     setupAuthListeners();
 
-    // Check if user is already logged in
     checkAuthStatus();
 });
 
@@ -35,7 +29,6 @@ function setupAuthListeners() {
         logoutBtn.addEventListener('click', logout);
     }
 
-    // Close modals when clicking X
     const closeButtons = document.querySelectorAll('.close');
     closeButtons.forEach(button => {
         button.addEventListener('click', function () {
@@ -43,7 +36,6 @@ function setupAuthListeners() {
         });
     });
 
-    // Close modals when clicking outside
     window.addEventListener('click', function (event) {
         if (loginModal && event.target === loginModal) {
             loginModal.style.display = 'none';
@@ -53,13 +45,11 @@ function setupAuthListeners() {
         }
     });
 
-    // Setup login form
     const loginForm = document.getElementById('loginForm');
     if (loginForm) {
         loginForm.addEventListener('submit', handleLogin);
     }
 
-    // Setup register form
     const registerForm = document.getElementById('registerForm');
     if (registerForm) {
         registerForm.addEventListener('submit', handleRegister);
@@ -98,7 +88,6 @@ async function handleLogin(e) {
         const data = await response.json();
 
         if (response.ok) {
-            // Save token and user info
             localStorage.setItem('token', data.token);
             localStorage.setItem('user', JSON.stringify({
                 email: email,
@@ -106,18 +95,14 @@ async function handleLogin(e) {
                 userId: data.userId
             }));
 
-            // Update UI
             updateAuthUI(data.role);
 
-            // Close modal and clear form
             if (loginModal) loginModal.style.display = 'none';
             document.getElementById('loginForm').reset();
             document.getElementById('loginMessage').textContent = '';
 
-            // Show success message
             alert('Login successful!');
 
-            // Reload page to reflect changes
             window.location.reload();
         } else {
             document.getElementById('loginMessage').textContent = data.message || 'Login failed';
@@ -150,7 +135,6 @@ async function handleRegister(e) {
             document.getElementById('registerMessage').textContent = 'Registration successful! Please login.';
             document.getElementById('registerMessage').style.color = 'green';
 
-            // Clear form and switch to login after 2 seconds
             setTimeout(() => {
                 if (registerModal) registerModal.style.display = 'none';
                 if (loginModal) loginModal.style.display = 'block';
@@ -193,17 +177,14 @@ function updateAuthUI(role) {
     const adminWelcome = document.getElementById('adminWelcome');
 
     if (role) {
-        // User is logged in
         if (loginBtn) loginBtn.style.display = 'none';
         if (registerBtn) registerBtn.style.display = 'none';
         if (logoutBtn) logoutBtn.style.display = 'block';
 
-        // Show admin link if user is admin
         if (adminLink && role === 'admin') {
             adminLink.style.display = 'block';
         }
 
-        // Update welcome messages
         if (userWelcome) {
             const user = JSON.parse(localStorage.getItem('user'));
             userWelcome.textContent = `Welcome, ${user.email}`;
@@ -214,7 +195,6 @@ function updateAuthUI(role) {
             adminWelcome.textContent = `Welcome, Admin ${user.email}`;
         }
     } else {
-        // User is not logged in
         if (loginBtn) loginBtn.style.display = 'block';
         if (registerBtn) registerBtn.style.display = 'block';
         if (logoutBtn) logoutBtn.style.display = 'none';
@@ -231,7 +211,6 @@ function logout() {
     currentUser = null;
     updateAuthUI(null);
 
-    // Redirect to home page
     if (window.location.pathname.includes('admin.html') ||
         window.location.pathname.includes('borrow.html')) {
         window.location.href = 'index.html';
@@ -240,7 +219,6 @@ function logout() {
     }
 }
 
-// Export functions for use in other files
 window.auth = {
     getToken: () => localStorage.getItem('token'),
     getUser: () => {

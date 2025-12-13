@@ -1,9 +1,6 @@
-// borrow.js - ACity Digital Library Borrow History Management
-
 document.addEventListener('DOMContentLoaded', function () {
     console.log('Borrow page loaded');
     
-    // Check if user is logged in
     const token = auth.getToken();
     if (!token) {
         alert('Please login to view your borrow history');
@@ -11,16 +8,13 @@ document.addEventListener('DOMContentLoaded', function () {
         return;
     }
 
-    // Update welcome message with user email
     const user = auth.getUser();
     if (user && user.email) {
         document.getElementById('userWelcome').textContent = `Welcome back, ${user.email}`;
     }
 
-    // Load user's borrow history
     loadBorrowHistory();
 
-    // Setup logout button
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
         logoutBtn.addEventListener('click', function() {
@@ -34,14 +28,12 @@ async function loadBorrowHistory() {
     console.log('Loading borrow history...');
     const token = auth.getToken();
 
-    // Show loading states
     const currentLoading = document.getElementById('currentLoading');
     const historyLoading = document.getElementById('historyLoading');
     
     if (currentLoading) currentLoading.style.display = 'block';
     if (historyLoading) historyLoading.style.display = 'block';
 
-    // Hide no-content messages initially
     const noCurrentBorrows = document.getElementById('noCurrentBorrows');
     const noHistory = document.getElementById('noHistory');
     
@@ -72,7 +64,6 @@ async function loadBorrowHistory() {
     } catch (error) {
         console.error('Error loading borrow history:', error);
         
-        // Show error messages
         const currentBorrows = document.getElementById('currentBorrows');
         const borrowHistory = document.getElementById('borrowHistory');
         
@@ -84,12 +75,10 @@ async function loadBorrowHistory() {
             borrowHistory.innerHTML = '<div class="error message">Error loading borrow history. Please try again.</div>';
         }
         
-        // Reset stat cards on error
         document.getElementById('currentBorrowsCount').textContent = '0';
         document.getElementById('dueSoonCount').textContent = '0';
         document.getElementById('returnedCount').textContent = '0';
     } finally {
-        // Hide loading states
         if (currentLoading) currentLoading.style.display = 'none';
         if (historyLoading) historyLoading.style.display = 'none';
     }
@@ -107,11 +96,9 @@ function displayBorrowHistory(borrows) {
         return;
     }
 
-    // Separate current borrows from returned books
     const currentBorrows = borrows.filter(b => b.status === 'borrowed' || b.status === 'active');
     const returnedBooks = borrows.filter(b => b.status === 'returned');
     
-    // Calculate due soon books (within next 3 days)
     const today = new Date();
     const threeDaysFromNow = new Date();
     threeDaysFromNow.setDate(today.getDate() + 3);
@@ -130,13 +117,10 @@ function displayBorrowHistory(borrows) {
     console.log('Due soon:', dueSoonBorrows.length);
     console.log('Returned:', returnedBooks.length);
 
-    // Update stat cards
     updateStatCards(currentBorrows.length, dueSoonBorrows.length, returnedBooks.length);
 
-    // Display current borrows
     displayCurrentBorrows(currentBorrows, currentBorrowsContainer);
 
-    // Display borrow history
     displayBorrowHistoryList(returnedBooks, borrowHistoryContainer);
 }
 
@@ -166,7 +150,6 @@ function displayCurrentBorrows(borrows, container) {
             const isOverdue = dueDate < today;
             const isDueSoon = !isOverdue && (dueDate - today) / (1000 * 60 * 60 * 24) <= 3;
             
-            // Format dates nicely
             const borrowDateStr = borrowDate.toLocaleDateString('en-US', {
                 year: 'numeric',
                 month: 'short',
@@ -180,7 +163,6 @@ function displayCurrentBorrows(borrows, container) {
                 weekday: 'short'
             });
 
-            // Calculate days until due
             const daysUntilDue = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
             
             return `
@@ -237,7 +219,6 @@ function displayBorrowHistoryList(borrows, container) {
             const returnDate = borrow.return_date ? new Date(borrow.return_date) : null;
             const wasOverdue = returnDate && (returnDate > dueDate);
             
-            // Format dates
             const borrowDateStr = borrowDate.toLocaleDateString('en-US', {
                 year: 'numeric',
                 month: 'short',
@@ -326,7 +307,6 @@ async function returnBook(borrowId) {
             alert('Book returned successfully!');
             console.log('Return successful:', data);
             
-            // Reload the borrow history
             loadBorrowHistory();
             
         } else {
@@ -346,6 +326,5 @@ async function returnBook(borrowId) {
     }
 }
 
-// Make functions available globally
 window.returnBook = returnBook;
 window.loadBorrowHistory = loadBorrowHistory;

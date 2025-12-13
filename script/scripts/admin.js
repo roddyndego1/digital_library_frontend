@@ -1,25 +1,22 @@
-// Admin Panel JavaScript
 document.addEventListener('DOMContentLoaded', function() {
-    // Check if user is admin
     if (!auth.isAdmin()) {
         alert('Access denied. Admins only.');
         window.location.href = 'index.html';
         return;
     }
 
-    // Load all books
+    setupTabs();
+    
+    loadAdminStats();
+    loadRecentActivity();
+    
     loadAdminBooks();
     
-    // Setup admin dashboard stats
-    loadAdminStats();
-    
-    // Setup add book form
     const addBookForm = document.getElementById('addBookForm');
     if (addBookForm) {
         addBookForm.addEventListener('submit', handleAddBook);
     }
     
-    // Setup search functionality
     const searchBtn = document.getElementById('adminSearchBtn');
     const searchInput = document.getElementById('adminSearch');
     
@@ -37,31 +34,312 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Display admin welcome message
-    const adminWelcome = document.getElementById('adminWelcome');
-    const user = auth.getUser();
-    if (adminWelcome && user) {
-        adminWelcome.textContent = `Welcome, Admin ${user.email}`;
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', function() {
+            auth.logout();
+            window.location.href = 'index.html';
+        });
     }
 });
 
+function setupTabs() {
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+    
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const targetTab = button.getAttribute('data-tab');
+            
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            tabContents.forEach(content => content.classList.remove('active'));
+            
+            button.classList.add('active');
+            const targetContent = document.getElementById(`${targetTab}-tab`);
+            if (targetContent) {
+                targetContent.classList.add('active');
+            }
+            
+            if (targetTab === 'borrowed') {
+                loadAllBorrowedBooks();
+            } else if (targetTab === 'returned') {
+                loadAllReturnedBooks();
+            }
+        });
+    });
+}
+
 async function loadAdminStats() {
     try {
-        const response = await fetch(`${BACKEND_URL}/books`);
-        const books = await response.json();
+        const token = auth.getToken();
         
-        // Calculate stats
+        const booksResponse = await fetch(`${BACKEND_URL}/books`);
+        const books = await booksResponse.json();
+        
         const totalBooks = books.length;
         const borrowedBooks = books.reduce((total, book) => {
             return total + (book.total_copies - book.available_copies);
         }, 0);
+        const availableBooks = books.reduce((total, book) => {
+            return total + book.available_copies;
+        }, 0);
         
-        // Update UI
-        document.getElementById('totalBooks').textContent = totalBooks;
-        document.getElementById('borrowedBooks').textContent = borrowedBooks;
+        let overdueBooks = 0;
+        try {
+            const borrowsResponse = await fetch(`${BACKEND_URL}/admin/all-borrows`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (borrowsResponse.ok) {
+                const borrows = await borrowsResponse.json();
+                const today = new Date();
+                overdueBooks = borrows.filter(borrow => {
+                    if (borrow.status === 'borrowed' || borrow.status === 'active') {
+                        const dueDate = new Date(borrow.due_date);
+                        return dueDate < today;
+                    }
+                    return false;
+                }).length;
+            }
+        } catch (error) {
+            console.error('Error loading borrows for overdue count:', error);
+        }
+        
+        let totalUsers = 0;
+        try {
+            const usersResponse = await fetch(`${BACKEND_URL}/admin/users`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            if (usersResponse.ok) {
+                const users = await usersResponse.json();
+                totalUsers = Array.isArray(users) ? users.length : 0;
+            }
+        } catch (error) {
+            console.error('Error loading users count:', error);
+            totalUsers = 0;
+        }
+        
+        const totalBooksEl = document.getElementById('totalBooks');
+        const totalUsersEl = document.getElementById('totalUsers');
+        const borrowedBooksEl = document.getElementById('borrowedBooks');
+        const overdueBooksEl = document.getElementById('overdueBooks');
+        const availableBooksEl = document.getElementById('availableBooks');
+        
+        if (totalBooksEl) totalBooksEl.textContent = totalBooks.toLocaleString();
+        if (totalUsersEl) totalUsersEl.textContent = totalUsers.toLocaleString();
+        if (borrowedBooksEl) borrowedBooksEl.textContent = borrowedBooks.toLocaleString();
+        if (overdueBooksEl) overdueBooksEl.textContent = overdueBooks.toLocaleString();
+        if (availableBooksEl) availableBooksEl.textContent = availableBooks.toLocaleString();
         
     } catch (error) {
         console.error('Error loading admin stats:', error);
+    }
+}
+
+async function loadRecentActivity() {
+    const token = auth.getToken();
+    const recentBorrowingsContainer = document.getElementById('recentBorrowings');
+    const recentlyReturnedContainer = document.getElementById('recentlyReturned');
+    
+    try {
+        const response = await fetch(`${BACKEND_URL}/admin/all-borrows`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (!response.ok) {
+            if (recentBorrowingsContainer) {
+                recentBorrowingsContainer.innerHTML = '<p class="no-books">Admin borrows endpoint not available</p>';
+            }
+            if (recentlyReturnedContainer) {
+                recentlyReturnedContainer.innerHTML = '<p class="no-books">Admin borrows endpoint not available</p>';
+            }
+            return;
+        }
+        
+        const allBorrows = await response.json();
+        
+        const activeBorrows = allBorrows.filter(b => b.status === 'borrowed' || b.status === 'active');
+        const returnedBorrows = allBorrows.filter(b => b.status === 'returned');
+        
+        activeBorrows.sort((a, b) => new Date(b.borrow_date || b.created_at) - new Date(a.borrow_date || a.created_at));
+        returnedBorrows.sort((a, b) => new Date(b.return_date || b.updated_at) - new Date(a.return_date || a.updated_at));
+        
+        const recentActive = activeBorrows.slice(0, 4);
+        const recentReturned = returnedBorrows.slice(0, 4);
+        
+        if (recentBorrowingsContainer) {
+            if (recentActive.length === 0) {
+                recentBorrowingsContainer.innerHTML = '<p class="no-books">No recent borrowings</p>';
+            } else {
+                recentBorrowingsContainer.innerHTML = recentActive.map(borrow => {
+                    const userName = borrow.user_name || borrow.user_email || 'Unknown User';
+                    const bookTitle = borrow.book_title || `Book ID: ${borrow.book_id}`;
+                    const isOverdue = borrow.due_date ? new Date(borrow.due_date) < new Date() : false;
+                    
+                    return `
+                        <div class="activity-item ${isOverdue ? 'overdue' : ''}">
+                            <div class="activity-item-header">
+                                <span class="activity-item-name">${userName}</span>
+                                <span class="activity-item-status ${isOverdue ? 'status-overdue' : 'status-active'}">
+                                    ${isOverdue ? 'Overdue' : 'Active'}
+                                </span>
+                            </div>
+                            <div class="activity-item-book">${bookTitle}</div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+        
+        if (recentlyReturnedContainer) {
+            if (recentReturned.length === 0) {
+                recentlyReturnedContainer.innerHTML = '<p class="no-books">No recent returns</p>';
+            } else {
+                recentlyReturnedContainer.innerHTML = recentReturned.map(borrow => {
+                    const userName = borrow.user_name || borrow.user_email || 'Unknown User';
+                    const bookTitle = borrow.book_title || `Book ID: ${borrow.book_id}`;
+                    const returnDate = borrow.return_date || borrow.updated_at;
+                    const formattedDate = returnDate ? new Date(returnDate).toISOString().split('T')[0] : 'N/A';
+                    
+                    return `
+                        <div class="activity-item">
+                            <div class="activity-item-header">
+                                <span class="activity-item-name">${userName}</span>
+                            </div>
+                            <div class="activity-item-book">${bookTitle}</div>
+                            <div class="activity-item-date">Returned: ${formattedDate}</div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+        
+    } catch (error) {
+        console.error('Error loading recent activity:', error);
+        if (recentBorrowingsContainer) {
+            recentBorrowingsContainer.innerHTML = '<p class="error">Error loading recent borrowings</p>';
+        }
+        if (recentlyReturnedContainer) {
+            recentlyReturnedContainer.innerHTML = '<p class="error">Error loading recent returns</p>';
+        }
+    }
+}
+
+async function loadAllBorrowedBooks() {
+    const token = auth.getToken();
+    const container = document.getElementById('allBorrowedBooks');
+    
+    if (!container) return;
+    
+    container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading borrowed books...</div>';
+    
+    try {
+        const response = await fetch(`${BACKEND_URL}/admin/all-borrows`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (!response.ok) {
+            container.innerHTML = '<p class="no-books">Admin borrows endpoint not available</p>';
+            return;
+        }
+        
+        const allBorrows = await response.json();
+        const activeBorrows = allBorrows.filter(b => b.status === 'borrowed' || b.status === 'active');
+        
+        if (activeBorrows.length === 0) {
+            container.innerHTML = '<p class="no-books">No borrowed books at the moment</p>';
+        } else {
+            container.innerHTML = activeBorrows.map(borrow => {
+                const userName = borrow.user_name || borrow.user_email || 'Unknown User';
+                const bookTitle = borrow.book_title || `Book ID: ${borrow.book_id}`;
+                const borrowDate = borrow.borrow_date || borrow.created_at;
+                const dueDate = borrow.due_date;
+                const isOverdue = dueDate ? new Date(dueDate) < new Date() : false;
+                const formattedBorrowDate = borrowDate ? new Date(borrowDate).toISOString().split('T')[0] : 'N/A';
+                const formattedDueDate = dueDate ? new Date(dueDate).toISOString().split('T')[0] : 'N/A';
+                
+                return `
+                    <div class="activity-item ${isOverdue ? 'overdue' : ''}">
+                        <div class="activity-item-header">
+                            <span class="activity-item-name">${userName}</span>
+                            <span class="activity-item-status ${isOverdue ? 'status-overdue' : 'status-active'}">
+                                ${isOverdue ? 'Overdue' : 'Active'}
+                            </span>
+                        </div>
+                        <div class="activity-item-book">${bookTitle}</div>
+                        <div class="activity-item-date">Borrowed: ${formattedBorrowDate} | Due: ${formattedDueDate}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+    } catch (error) {
+        console.error('Error loading all borrowed books:', error);
+        container.innerHTML = '<p class="error">Error loading borrowed books</p>';
+    }
+}
+
+async function loadAllReturnedBooks() {
+    const token = auth.getToken();
+    const container = document.getElementById('allReturnedBooks');
+    
+    if (!container) return;
+    
+    container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading returned books...</div>';
+    
+    try {
+        const response = await fetch(`${BACKEND_URL}/admin/all-borrows`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (!response.ok) {
+            container.innerHTML = '<p class="no-books">Admin borrows endpoint not available</p>';
+            return;
+        }
+        
+        const allBorrows = await response.json();
+        const returnedBorrows = allBorrows.filter(b => b.status === 'returned');
+        
+        returnedBorrows.sort((a, b) => {
+            const dateA = new Date(a.return_date || a.updated_at);
+            const dateB = new Date(b.return_date || b.updated_at);
+            return dateB - dateA;
+        });
+        
+        if (returnedBorrows.length === 0) {
+            container.innerHTML = '<p class="no-books">No returned books yet</p>';
+        } else {
+            container.innerHTML = returnedBorrows.map(borrow => {
+                const userName = borrow.user_name || borrow.user_email || 'Unknown User';
+                const bookTitle = borrow.book_title || `Book ID: ${borrow.book_id}`;
+                const returnDate = borrow.return_date || borrow.updated_at;
+                const formattedDate = returnDate ? new Date(returnDate).toISOString().split('T')[0] : 'N/A';
+                
+                return `
+                    <div class="activity-item">
+                        <div class="activity-item-header">
+                            <span class="activity-item-name">${userName}</span>
+                        </div>
+                        <div class="activity-item-book">${bookTitle}</div>
+                        <div class="activity-item-date">Returned: ${formattedDate}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+    } catch (error) {
+        console.error('Error loading all returned books:', error);
+        container.innerHTML = '<p class="error">Error loading returned books</p>';
     }
 }
 
@@ -97,7 +375,6 @@ async function loadAdminBooks(searchTerm = '') {
             displayAdminBooks(filteredBooks);
         }
         
-        // Update stats after loading books
         loadAdminStats();
         
     } catch (error) {
@@ -163,52 +440,32 @@ function displayAdminBooks(books) {
 }
 
 function getBookCover(book) {
-    // Book cover mapping for your specific books
     const bookCovers = {
-        // Fiction
-        '978-0385474542': 'https://covers.openlibrary.org/b/isbn/9780385474542-L.jpg', // Things Fall Apart
-        '978-1594631931': 'https://covers.openlibrary.org/b/isbn/9781594631931-L.jpg', // The Kite Runner
-        '978-0307474278': 'https://covers.openlibrary.org/b/isbn/9780307474278-L.jpg', // The Da Vinci Code
-        '978-0307588371': 'https://covers.openlibrary.org/b/isbn/9780307588371-L.jpg', // Gone Girl
-        
-        // African Literature
-        '978-0007200283': 'https://covers.openlibrary.org/b/isbn/9780007200283-L.jpg', // Half of a Yellow Sun
-        '978-0954702335': 'https://covers.openlibrary.org/b/isbn/9780954702335-L.jpg', // Nervous Conditions
-        
-        // Biography
-        '978-1524763138': 'https://covers.openlibrary.org/b/isbn/9781524763138-L.jpg', // Becoming
-        
-        // Science Fiction
-        '978-0441013593': 'https://images.unsplash.com/photo-1532012197267-da84d127e765?w=400&h=500&fit=fill&crop=faces', // Dune
-        '978-0439023481': 'https://covers.openlibrary.org/b/isbn/9780439023481-L.jpg', // The Hunger Games
-        
-        // Romance
-        '978-0141439518': 'https://covers.openlibrary.org/b/isbn/9780141439518-L.jpg', // Pride and Prejudice
-        
-        // Self-Help & Business
-        '978-1982137274': 'https://covers.openlibrary.org/b/isbn/9781982137274-L.jpg', // 7 Habits
-        '978-1612680194': 'https://covers.openlibrary.org/b/isbn/9781612680194-L.jpg', // Rich Dad Poor Dad
-        
-        // History & Science
-        '978-0062316097': 'https://covers.openlibrary.org/b/isbn/9780062316097-L.jpg', // Sapiens
-        '978-0553380163': 'https://covers.openlibrary.org/b/isbn/9780553380163-L.jpg', // A Brief History of Time
-        
-        // Poetry & Drama
-        '978-1449474256': 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=400&h=500&fit=fill&crop=faces', // Milk and Honey
-        '978-0140481341': 'https://covers.openlibrary.org/b/isbn/9780140481341-L.jpg', // Death of a Salesman
-        
-        // Academic
-        '978-0262043793': 'https://images.unsplash.com/photo-1517077304055-6e89abbf09b0?w=400&h=500&fit=fill&crop=faces', // Machine Learning
-        '978-1285741550': 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=400&h=500&fit=fill&crop=faces', // Calculus
-        '978-0134042282': 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=400&h=500&fit=fill&crop=faces', // Organic Chemistry
+        '978-0385474542': 'https://covers.openlibrary.org/b/isbn/9780385474542-L.jpg',
+        '978-1594631931': 'https://covers.openlibrary.org/b/isbn/9781594631931-L.jpg',
+        '978-0307474278': 'https://covers.openlibrary.org/b/isbn/9780307474278-L.jpg',
+        '978-0307588371': 'https://covers.openlibrary.org/b/isbn/9780307588371-L.jpg',
+        '978-0007200283': 'https://covers.openlibrary.org/b/isbn/9780007200283-L.jpg',
+        '978-0954702335': 'https://covers.openlibrary.org/b/isbn/9780954702335-L.jpg',
+        '978-1524763138': 'https://covers.openlibrary.org/b/isbn/9781524763138-L.jpg',
+        '978-0441013593': 'https://images.unsplash.com/photo-1532012197267-da84d127e765?w=400&h=500&fit=fill&crop=faces',
+        '978-0439023481': 'https://covers.openlibrary.org/b/isbn/9780439023481-L.jpg',
+        '978-0141439518': 'https://covers.openlibrary.org/b/isbn/9780141439518-L.jpg',
+        '978-1982137274': 'https://covers.openlibrary.org/b/isbn/9781982137274-L.jpg',
+        '978-1612680194': 'https://covers.openlibrary.org/b/isbn/9781612680194-L.jpg',
+        '978-0062316097': 'https://covers.openlibrary.org/b/isbn/9780062316097-L.jpg',
+        '978-0553380163': 'https://covers.openlibrary.org/b/isbn/9780553380163-L.jpg',
+        '978-1449474256': 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=400&h=500&fit=fill&crop=faces',
+        '978-0140481341': 'https://covers.openlibrary.org/b/isbn/9780140481341-L.jpg',
+        '978-0262043793': 'https://images.unsplash.com/photo-1517077304055-6e89abbf09b0?w=400&h=500&fit=fill&crop=faces',
+        '978-1285741550': 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=400&h=500&fit=fill&crop=faces',
+        '978-0134042282': 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=400&h=500&fit=fill&crop=faces',
     };
     
-    // Try to get specific cover by ISBN
     if (book.isbn && bookCovers[book.isbn]) {
         return bookCovers[book.isbn];
     }
     
-    // Fallback to category-based images
     const categoryImages = {
         'Fiction': 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&h=500&fit=fill&crop=faces',
         'African Literature': 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=400&h=500&fit=fill&crop=faces',
@@ -237,7 +494,6 @@ async function handleAddBook(e) {
     const token = auth.getToken();
     const messageElement = document.getElementById('addBookMessage');
     
-    // Get form values
     const bookData = {
         title: document.getElementById('bookTitle').value.trim(),
         author: document.getElementById('bookAuthor').value.trim(),
@@ -248,7 +504,6 @@ async function handleAddBook(e) {
         available_copies: parseInt(document.getElementById('bookAvailableCopies').value)
     };
     
-    // Validation
     if (!bookData.title || !bookData.author || !bookData.isbn) {
         showMessage(messageElement, 'Please fill in all required fields', 'error');
         return;
@@ -275,9 +530,9 @@ async function handleAddBook(e) {
             showMessage(messageElement, 'Book added successfully!', 'success');
             document.getElementById('addBookForm').reset();
             
-            // Reload books after a short delay
             setTimeout(() => {
                 loadAdminBooks();
+                loadAdminStats();
             }, 1000);
             
         } else {
@@ -297,7 +552,6 @@ function showMessage(element, text, type) {
     element.classList.add(type);
     element.style.display = 'block';
     
-    // Auto-hide success messages after 3 seconds
     if (type === 'success') {
         setTimeout(() => {
             element.style.display = 'none';
@@ -306,7 +560,6 @@ function showMessage(element, text, type) {
 }
 
 async function editBook(bookId) {
-    // First, fetch the book details
     try {
         const response = await fetch(`${BACKEND_URL}/books/${bookId}`);
         if (!response.ok) {
@@ -316,7 +569,6 @@ async function editBook(bookId) {
         
         const book = await response.json();
         
-        // Create a modal for editing
         const editModal = document.createElement('div');
         editModal.className = 'modal';
         editModal.style.display = 'block';
@@ -382,7 +634,6 @@ async function editBook(bookId) {
         
         document.body.appendChild(editModal);
         
-        // Handle form submission
         const editForm = document.getElementById('editBookForm');
         editForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -400,7 +651,6 @@ async function editBook(bookId) {
                 available_copies: parseInt(document.getElementById('editAvailableCopies').value)
             };
             
-            // Validation
             if (updatedData.available_copies > updatedData.total_copies) {
                 showMessage(editMessage, 'Available copies cannot exceed total copies', 'error');
                 return;
@@ -421,10 +671,10 @@ async function editBook(bookId) {
                 if (response.ok) {
                     showMessage(editMessage, 'Book updated successfully!', 'success');
                     
-                    // Close modal and reload books after a short delay
                     setTimeout(() => {
                         editModal.remove();
                         loadAdminBooks();
+                        loadAdminStats();
                     }, 1500);
                     
                 } else {
@@ -436,7 +686,6 @@ async function editBook(bookId) {
             }
         });
         
-        // Close modal when clicking outside
         editModal.addEventListener('click', (e) => {
             if (e.target === editModal) {
                 editModal.remove();
@@ -467,6 +716,7 @@ async function deleteBook(bookId) {
         if (response.ok) {
             alert('Book deleted successfully!');
             loadAdminBooks();
+            loadAdminStats();
         } else {
             const data = await response.json();
             alert(`${data.message || 'Error deleting book'}`);
@@ -477,7 +727,6 @@ async function deleteBook(bookId) {
     }
 }
 
-// Make functions available globally
 window.editBook = editBook;
 window.deleteBook = deleteBook;
 window.loadAdminBooks = loadAdminBooks;
