@@ -1,3 +1,5 @@
+const BACKEND_URL = 'https://digital-library-backend-render.onrender.com';
+
 document.addEventListener('DOMContentLoaded', function() {
     if (!auth.isAdmin()) {
         alert('Access denied. Admins only.');
@@ -6,27 +8,26 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     setupTabs();
-    
     loadAdminStats();
     loadRecentActivity();
-    
     loadAdminBooks();
-    
+    setupEventListeners();
+});
+
+function setupEventListeners() {
     const addBookForm = document.getElementById('addBookForm');
     if (addBookForm) {
         addBookForm.addEventListener('submit', handleAddBook);
     }
-    
+
     const searchBtn = document.getElementById('adminSearchBtn');
     const searchInput = document.getElementById('adminSearch');
-    
-    if (searchBtn) {
+
+    if (searchBtn && searchInput) {
         searchBtn.addEventListener('click', () => {
             loadAdminBooks(searchInput.value);
         });
-    }
-    
-    if (searchInput) {
+
         searchInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 loadAdminBooks(searchInput.value);
@@ -41,7 +42,7 @@ document.addEventListener('DOMContentLoaded', function() {
             window.location.href = 'index.html';
         });
     }
-});
+}
 
 function setupTabs() {
     const tabButtons = document.querySelectorAll('.tab-btn');
@@ -74,6 +75,10 @@ async function loadAdminStats() {
         const token = auth.getToken();
         
         const booksResponse = await fetch(`${BACKEND_URL}/books`);
+        if (!booksResponse.ok) {
+            throw new Error('Failed to load books');
+        }
+        
         const books = await booksResponse.json();
         
         const totalBooks = books.length;
@@ -84,60 +89,74 @@ async function loadAdminStats() {
             return total + book.available_copies;
         }, 0);
         
-        let overdueBooks = 0;
-        try {
-            const borrowsResponse = await fetch(`${BACKEND_URL}/admin/all-borrows`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            
-            if (borrowsResponse.ok) {
-                const borrows = await borrowsResponse.json();
-                const today = new Date();
-                overdueBooks = borrows.filter(borrow => {
-                    if (borrow.status === 'borrowed' || borrow.status === 'active') {
-                        const dueDate = new Date(borrow.due_date);
-                        return dueDate < today;
-                    }
-                    return false;
-                }).length;
-            }
-        } catch (error) {
-            console.error('Error loading borrows for overdue count:', error);
-        }
+        const overdueBooks = await getOverdueBooksCount(token);
+        const totalUsers = await getTotalUsersCount(token);
         
-        let totalUsers = 0;
-        try {
-            const usersResponse = await fetch(`${BACKEND_URL}/admin/users`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            if (usersResponse.ok) {
-                const users = await usersResponse.json();
-                totalUsers = Array.isArray(users) ? users.length : 0;
-            }
-        } catch (error) {
-            console.error('Error loading users count:', error);
-            totalUsers = 0;
-        }
-        
-        const totalBooksEl = document.getElementById('totalBooks');
-        const totalUsersEl = document.getElementById('totalUsers');
-        const borrowedBooksEl = document.getElementById('borrowedBooks');
-        const overdueBooksEl = document.getElementById('overdueBooks');
-        const availableBooksEl = document.getElementById('availableBooks');
-        
-        if (totalBooksEl) totalBooksEl.textContent = totalBooks.toLocaleString();
-        if (totalUsersEl) totalUsersEl.textContent = totalUsers.toLocaleString();
-        if (borrowedBooksEl) borrowedBooksEl.textContent = borrowedBooks.toLocaleString();
-        if (overdueBooksEl) overdueBooksEl.textContent = overdueBooks.toLocaleString();
-        if (availableBooksEl) availableBooksEl.textContent = availableBooks.toLocaleString();
+        updateStatsDisplay(totalBooks, totalUsers, borrowedBooks, overdueBooks, availableBooks);
         
     } catch (error) {
-        console.error('Error loading admin stats:', error);
+        updateStatsDisplay(0, 0, 0, 0, 0);
     }
+}
+
+async function getOverdueBooksCount(token) {
+    try {
+        const borrowsResponse = await fetch(`${BACKEND_URL}/admin/all-borrows`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (!borrowsResponse.ok) {
+            return 0;
+        }
+        
+        const borrows = await borrowsResponse.json();
+        const today = new Date();
+        
+        return borrows.filter(borrow => {
+            if (borrow.status === 'borrowed' || borrow.status === 'active') {
+                const dueDate = new Date(borrow.due_date);
+                return dueDate < today;
+            }
+            return false;
+        }).length;
+    } catch {
+        return 0;
+    }
+}
+
+async function getTotalUsersCount(token) {
+    try {
+        const usersResponse = await fetch(`${BACKEND_URL}/admin/users`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (!usersResponse.ok) {
+            return 0;
+        }
+        
+        const users = await usersResponse.json();
+        return Array.isArray(users) ? users.length : 0;
+    } catch {
+        return 0;
+    }
+}
+
+function updateStatsDisplay(totalBooks, totalUsers, borrowedBooks, overdueBooks, availableBooks) {
+    const totalBooksEl = document.getElementById('totalBooks');
+    const totalUsersEl = document.getElementById('totalUsers');
+    const borrowedBooksEl = document.getElementById('borrowedBooks');
+    const overdueBooksEl = document.getElementById('overdueBooks');
+    const availableBooksEl = document.getElementById('availableBooks');
+    
+    if (totalBooksEl) totalBooksEl.textContent = totalBooks.toLocaleString();
+    if (totalUsersEl) totalUsersEl.textContent = totalUsers.toLocaleString();
+    if (borrowedBooksEl) borrowedBooksEl.textContent = borrowedBooks.toLocaleString();
+    if (overdueBooksEl) overdueBooksEl.textContent = overdueBooks.toLocaleString();
+    if (availableBooksEl) availableBooksEl.textContent = availableBooks.toLocaleString();
 }
 
 async function loadRecentActivity() {
@@ -153,82 +172,108 @@ async function loadRecentActivity() {
         });
         
         if (!response.ok) {
-            if (recentBorrowingsContainer) {
-                recentBorrowingsContainer.innerHTML = '<p class="no-books">Admin borrows endpoint not available</p>';
-            }
-            if (recentlyReturnedContainer) {
-                recentlyReturnedContainer.innerHTML = '<p class="no-books">Admin borrows endpoint not available</p>';
-            }
+            showActivityError(recentBorrowingsContainer, recentlyReturnedContainer);
             return;
         }
         
         const allBorrows = await response.json();
-        
         const activeBorrows = allBorrows.filter(b => b.status === 'borrowed' || b.status === 'active');
         const returnedBorrows = allBorrows.filter(b => b.status === 'returned');
         
-        activeBorrows.sort((a, b) => new Date(b.borrow_date || b.created_at) - new Date(a.borrow_date || a.created_at));
-        returnedBorrows.sort((a, b) => new Date(b.return_date || b.updated_at) - new Date(a.return_date || a.updated_at));
+        activeBorrows.sort((a, b) => {
+            const dateA = new Date(a.borrow_date || a.created_at);
+            const dateB = new Date(b.borrow_date || b.created_at);
+            return dateB - dateA;
+        });
+        
+        returnedBorrows.sort((a, b) => {
+            const dateA = new Date(a.return_date || a.updated_at);
+            const dateB = new Date(b.return_date || b.updated_at);
+            return dateB - dateA;
+        });
         
         const recentActive = activeBorrows.slice(0, 4);
         const recentReturned = returnedBorrows.slice(0, 4);
         
-        if (recentBorrowingsContainer) {
-            if (recentActive.length === 0) {
-                recentBorrowingsContainer.innerHTML = '<p class="no-books">No recent borrowings</p>';
-            } else {
-                recentBorrowingsContainer.innerHTML = recentActive.map(borrow => {
-                    const userName = borrow.user_name || borrow.user_email || 'Unknown User';
-                    const bookTitle = borrow.book_title || `Book ID: ${borrow.book_id}`;
-                    const isOverdue = borrow.due_date ? new Date(borrow.due_date) < new Date() : false;
-                    
-                    return `
-                        <div class="activity-item ${isOverdue ? 'overdue' : ''}">
-                            <div class="activity-item-header">
-                                <span class="activity-item-name">${userName}</span>
-                                <span class="activity-item-status ${isOverdue ? 'status-overdue' : 'status-active'}">
-                                    ${isOverdue ? 'Overdue' : 'Active'}
-                                </span>
-                            </div>
-                            <div class="activity-item-book">${bookTitle}</div>
-                        </div>
-                    `;
-                }).join('');
-            }
-        }
-        
-        if (recentlyReturnedContainer) {
-            if (recentReturned.length === 0) {
-                recentlyReturnedContainer.innerHTML = '<p class="no-books">No recent returns</p>';
-            } else {
-                recentlyReturnedContainer.innerHTML = recentReturned.map(borrow => {
-                    const userName = borrow.user_name || borrow.user_email || 'Unknown User';
-                    const bookTitle = borrow.book_title || `Book ID: ${borrow.book_id}`;
-                    const returnDate = borrow.return_date || borrow.updated_at;
-                    const formattedDate = returnDate ? new Date(returnDate).toISOString().split('T')[0] : 'N/A';
-                    
-                    return `
-                        <div class="activity-item">
-                            <div class="activity-item-header">
-                                <span class="activity-item-name">${userName}</span>
-                            </div>
-                            <div class="activity-item-book">${bookTitle}</div>
-                            <div class="activity-item-date">Returned: ${formattedDate}</div>
-                        </div>
-                    `;
-                }).join('');
-            }
-        }
+        displayRecentBorrowings(recentActive, recentBorrowingsContainer);
+        displayRecentReturns(recentReturned, recentlyReturnedContainer);
         
     } catch (error) {
-        console.error('Error loading recent activity:', error);
-        if (recentBorrowingsContainer) {
-            recentBorrowingsContainer.innerHTML = '<p class="error">Error loading recent borrowings</p>';
-        }
-        if (recentlyReturnedContainer) {
-            recentlyReturnedContainer.innerHTML = '<p class="error">Error loading recent returns</p>';
-        }
+        showActivityError(recentBorrowingsContainer, recentlyReturnedContainer);
     }
+}
+
+function showActivityError(recentBorrowingsContainer, recentlyReturnedContainer) {
+    if (recentBorrowingsContainer) {
+        recentBorrowingsContainer.innerHTML = '<p class="error">Error loading recent borrowings</p>';
+    }
+    if (recentlyReturnedContainer) {
+        recentlyReturnedContainer.innerHTML = '<p class="error">Error loading recent returns</p>';
+    }
+}
+
+function displayRecentBorrowings(borrows, container) {
+    if (!container) return;
+    
+    if (borrows.length === 0) {
+        container.innerHTML = '<p class="no-books">No recent borrowings</p>';
+        return;
+    }
+    
+    container.innerHTML = borrows.map(borrow => formatActivityItem(borrow, true)).join('');
+}
+
+function displayRecentReturns(borrows, container) {
+    if (!container) return;
+    
+    if (borrows.length === 0) {
+        container.innerHTML = '<p class="no-books">No recent returns</p>';
+        return;
+    }
+    
+    container.innerHTML = borrows.map(borrow => formatActivityItem(borrow, false)).join('');
+}
+
+function formatActivityItem(borrow, isActive) {
+    const userName = escapeHtml(borrow.user_name || borrow.user_email || 'Unknown User');
+    const bookTitle = escapeHtml(borrow.book_title || `Book ID: ${borrow.book_id}`);
+    
+    if (isActive) {
+        const isOverdue = borrow.due_date ? new Date(borrow.due_date) < new Date() : false;
+        return `
+            <div class="activity-item ${isOverdue ? 'overdue' : ''}">
+                <div class="activity-item-header">
+                    <span class="activity-item-name">${userName}</span>
+                    <span class="activity-item-status ${isOverdue ? 'status-overdue' : 'status-active'}">
+                        ${isOverdue ? 'Overdue' : 'Active'}
+                    </span>
+                </div>
+                <div class="activity-item-book">${bookTitle}</div>
+            </div>
+        `;
+    } else {
+        const returnDate = borrow.return_date || borrow.updated_at;
+        const formattedDate = returnDate ? formatDate(new Date(returnDate)) : 'N/A';
+        return `
+            <div class="activity-item">
+                <div class="activity-item-header">
+                    <span class="activity-item-name">${userName}</span>
+                </div>
+                <div class="activity-item-book">${bookTitle}</div>
+                <div class="activity-item-date">Returned: ${formattedDate}</div>
+            </div>
+        `;
+    }
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function formatDate(date) {
+    return date.toISOString().split('T')[0];
 }
 
 async function loadAllBorrowedBooks() {
@@ -247,7 +292,7 @@ async function loadAllBorrowedBooks() {
         });
         
         if (!response.ok) {
-            container.innerHTML = '<p class="no-books">Admin borrows endpoint not available</p>';
+            container.innerHTML = '<p class="no-books">Unable to load borrowed books</p>';
             return;
         }
         
@@ -257,34 +302,35 @@ async function loadAllBorrowedBooks() {
         if (activeBorrows.length === 0) {
             container.innerHTML = '<p class="no-books">No borrowed books at the moment</p>';
         } else {
-            container.innerHTML = activeBorrows.map(borrow => {
-                const userName = borrow.user_name || borrow.user_email || 'Unknown User';
-                const bookTitle = borrow.book_title || `Book ID: ${borrow.book_id}`;
-                const borrowDate = borrow.borrow_date || borrow.created_at;
-                const dueDate = borrow.due_date;
-                const isOverdue = dueDate ? new Date(dueDate) < new Date() : false;
-                const formattedBorrowDate = borrowDate ? new Date(borrowDate).toISOString().split('T')[0] : 'N/A';
-                const formattedDueDate = dueDate ? new Date(dueDate).toISOString().split('T')[0] : 'N/A';
-                
-                return `
-                    <div class="activity-item ${isOverdue ? 'overdue' : ''}">
-                        <div class="activity-item-header">
-                            <span class="activity-item-name">${userName}</span>
-                            <span class="activity-item-status ${isOverdue ? 'status-overdue' : 'status-active'}">
-                                ${isOverdue ? 'Overdue' : 'Active'}
-                            </span>
-                        </div>
-                        <div class="activity-item-book">${bookTitle}</div>
-                        <div class="activity-item-date">Borrowed: ${formattedBorrowDate} | Due: ${formattedDueDate}</div>
-                    </div>
-                `;
-            }).join('');
+            container.innerHTML = activeBorrows.map(borrow => formatBorrowedBookItem(borrow)).join('');
         }
         
     } catch (error) {
-        console.error('Error loading all borrowed books:', error);
         container.innerHTML = '<p class="error">Error loading borrowed books</p>';
     }
+}
+
+function formatBorrowedBookItem(borrow) {
+    const userName = escapeHtml(borrow.user_name || borrow.user_email || 'Unknown User');
+    const bookTitle = escapeHtml(borrow.book_title || `Book ID: ${borrow.book_id}`);
+    const borrowDate = borrow.borrow_date || borrow.created_at;
+    const dueDate = borrow.due_date;
+    const isOverdue = dueDate ? new Date(dueDate) < new Date() : false;
+    const formattedBorrowDate = borrowDate ? formatDate(new Date(borrowDate)) : 'N/A';
+    const formattedDueDate = dueDate ? formatDate(new Date(dueDate)) : 'N/A';
+    
+    return `
+        <div class="activity-item ${isOverdue ? 'overdue' : ''}">
+            <div class="activity-item-header">
+                <span class="activity-item-name">${userName}</span>
+                <span class="activity-item-status ${isOverdue ? 'status-overdue' : 'status-active'}">
+                    ${isOverdue ? 'Overdue' : 'Active'}
+                </span>
+            </div>
+            <div class="activity-item-book">${bookTitle}</div>
+            <div class="activity-item-date">Borrowed: ${formattedBorrowDate} | Due: ${formattedDueDate}</div>
+        </div>
+    `;
 }
 
 async function loadAllReturnedBooks() {
@@ -303,7 +349,7 @@ async function loadAllReturnedBooks() {
         });
         
         if (!response.ok) {
-            container.innerHTML = '<p class="no-books">Admin borrows endpoint not available</p>';
+            container.innerHTML = '<p class="no-books">Unable to load returned books</p>';
             return;
         }
         
@@ -319,28 +365,29 @@ async function loadAllReturnedBooks() {
         if (returnedBorrows.length === 0) {
             container.innerHTML = '<p class="no-books">No returned books yet</p>';
         } else {
-            container.innerHTML = returnedBorrows.map(borrow => {
-                const userName = borrow.user_name || borrow.user_email || 'Unknown User';
-                const bookTitle = borrow.book_title || `Book ID: ${borrow.book_id}`;
-                const returnDate = borrow.return_date || borrow.updated_at;
-                const formattedDate = returnDate ? new Date(returnDate).toISOString().split('T')[0] : 'N/A';
-                
-                return `
-                    <div class="activity-item">
-                        <div class="activity-item-header">
-                            <span class="activity-item-name">${userName}</span>
-                        </div>
-                        <div class="activity-item-book">${bookTitle}</div>
-                        <div class="activity-item-date">Returned: ${formattedDate}</div>
-                    </div>
-                `;
-            }).join('');
+            container.innerHTML = returnedBorrows.map(borrow => formatReturnedBookItem(borrow)).join('');
         }
         
     } catch (error) {
-        console.error('Error loading all returned books:', error);
         container.innerHTML = '<p class="error">Error loading returned books</p>';
     }
+}
+
+function formatReturnedBookItem(borrow) {
+    const userName = escapeHtml(borrow.user_name || borrow.user_email || 'Unknown User');
+    const bookTitle = escapeHtml(borrow.book_title || `Book ID: ${borrow.book_id}`);
+    const returnDate = borrow.return_date || borrow.updated_at;
+    const formattedDate = returnDate ? formatDate(new Date(returnDate)) : 'N/A';
+    
+    return `
+        <div class="activity-item">
+            <div class="activity-item-header">
+                <span class="activity-item-name">${userName}</span>
+            </div>
+            <div class="activity-item-book">${bookTitle}</div>
+            <div class="activity-item-date">Returned: ${formattedDate}</div>
+        </div>
+    `;
 }
 
 async function loadAdminBooks(searchTerm = '') {
@@ -354,20 +401,16 @@ async function loadAdminBooks(searchTerm = '') {
     
     try {
         const response = await fetch(`${BACKEND_URL}/books`);
+        
+        if (!response.ok) {
+            throw new Error('Failed to load books');
+        }
+        
         const books = await response.json();
         
         if (loadingElement) loadingElement.style.display = 'none';
         
-        let filteredBooks = books;
-        if (searchTerm) {
-            const term = searchTerm.toLowerCase();
-            filteredBooks = filteredBooks.filter(book => 
-                book.title.toLowerCase().includes(term) ||
-                book.author.toLowerCase().includes(term) ||
-                (book.category && book.category.toLowerCase().includes(term)) ||
-                book.isbn.toLowerCase().includes(term)
-            );
-        }
+        let filteredBooks = filterBooks(books, searchTerm);
         
         if (filteredBooks.length === 0) {
             if (noBooksElement) noBooksElement.style.display = 'block';
@@ -378,7 +421,6 @@ async function loadAdminBooks(searchTerm = '') {
         loadAdminStats();
         
     } catch (error) {
-        console.error('Error loading books:', error);
         if (loadingElement) loadingElement.style.display = 'none';
         if (booksContainer) {
             booksContainer.innerHTML = '<div class="error">Error loading books. Please try again.</div>';
@@ -386,30 +428,51 @@ async function loadAdminBooks(searchTerm = '') {
     }
 }
 
+function filterBooks(books, searchTerm) {
+    if (!searchTerm) return books;
+    
+    const term = searchTerm.toLowerCase().trim();
+    return books.filter(book => 
+        book.title.toLowerCase().includes(term) ||
+        book.author.toLowerCase().includes(term) ||
+        (book.category && book.category.toLowerCase().includes(term)) ||
+        book.isbn.toLowerCase().includes(term)
+    );
+}
+
 function displayAdminBooks(books) {
     const booksContainer = document.getElementById('adminBooksContainer');
+    if (!booksContainer) return;
     
-    booksContainer.innerHTML = books.map(book => {
-        const coverImage = getBookCover(book);
-        
-        return `
+    booksContainer.innerHTML = books.map(book => createAdminBookCard(book)).join('');
+}
+
+function createAdminBookCard(book) {
+    const coverImage = getBookCover(book);
+    const description = book.description 
+        ? `<div class="book-description-container">
+            <p class="book-description">${escapeHtml(book.description.substring(0, 100))}...</p>
+        </div>`
+        : '';
+    
+    return `
         <div class="book-card" data-book-id="${book.id}">
             <div class="book-cover-container">
                 <div class="book-cover">
-                    <img src="${coverImage}" alt="${book.title}" class="book-cover-img" 
+                    <img src="${coverImage}" alt="${escapeHtml(book.title)}" class="book-cover-img" 
                          onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&h=500&fit=fill&crop=faces';">
                 </div>
                 <div class="book-cover-overlay">
-                    <span class="book-category-badge">${book.category || 'General'}</span>
+                    <span class="book-category-badge">${escapeHtml(book.category || 'General')}</span>
                 </div>
             </div>
             <div class="book-info">
-                <h3 class="book-title" title="${book.title}">${book.title}</h3>
-                <p class="book-author" title="${book.author}">
-                    <i class="fas fa-user-edit"></i> ${book.author}
+                <h3 class="book-title" title="${escapeHtml(book.title)}">${escapeHtml(book.title)}</h3>
+                <p class="book-author" title="${escapeHtml(book.author)}">
+                    <i class="fas fa-user-edit"></i> ${escapeHtml(book.author)}
                 </p>
                 <p class="book-isbn">
-                    <i class="fas fa-barcode"></i> ${book.isbn}
+                    <i class="fas fa-barcode"></i> ${escapeHtml(book.isbn)}
                 </p>
                 <div class="book-meta">
                     <span class="book-copies">
@@ -419,12 +482,7 @@ function displayAdminBooks(books) {
                         ${book.available_copies > 0 ? 'Available' : 'Out of Stock'}
                     </span>
                 </div>
-                ${book.description ? `
-                <div class="book-description-container">
-                    <p class="book-description">${book.description.substring(0, 100)}...</p>
-                </div>
-                ` : ''}
-                
+                ${description}
                 <div class="admin-actions">
                     <button class="edit-btn" onclick="editBook(${book.id})" title="Edit this book">
                         <i class="fas fa-edit"></i> Edit
@@ -435,8 +493,7 @@ function displayAdminBooks(books) {
                 </div>
             </div>
         </div>
-        `;
-    }).join('');
+    `;
 }
 
 function getBookCover(book) {
@@ -536,10 +593,9 @@ async function handleAddBook(e) {
             }, 1000);
             
         } else {
-            showMessage(messageElement, `${data.message || 'Error adding book'}`, 'error');
+            showMessage(messageElement, data.message || 'Error adding book', 'error');
         }
     } catch (error) {
-        console.error('Error adding book:', error);
         showMessage(messageElement, 'Error connecting to server', 'error');
     }
 }
@@ -568,133 +624,136 @@ async function editBook(bookId) {
         }
         
         const book = await response.json();
-        
-        const editModal = document.createElement('div');
-        editModal.className = 'modal';
-        editModal.style.display = 'block';
-        editModal.innerHTML = `
-            <div class="modal-content">
-                <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
-                <h2><i class="fas fa-edit"></i> Edit Book</h2>
-                <form id="editBookForm" class="book-form">
-                    <div class="form-group">
-                        <label for="editTitle">Title</label>
-                        <input type="text" id="editTitle" value="${book.title}" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="editAuthor">Author</label>
-                        <input type="text" id="editAuthor" value="${book.author}" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="editISBN">ISBN</label>
-                        <input type="text" id="editISBN" value="${book.isbn}" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="editCategory">Category</label>
-                        <select id="editCategory" required>
-                            <option value="Fiction" ${book.category === 'Fiction' ? 'selected' : ''}>Fiction</option>
-                            <option value="African Literature" ${book.category === 'African Literature' ? 'selected' : ''}>African Literature</option>
-                            <option value="Science Fiction" ${book.category === 'Science Fiction' ? 'selected' : ''}>Science Fiction</option>
-                            <option value="Biography" ${book.category === 'Biography' ? 'selected' : ''}>Biography</option>
-                            <option value="Mystery" ${book.category === 'Mystery' ? 'selected' : ''}>Mystery</option>
-                            <option value="Thriller" ${book.category === 'Thriller' ? 'selected' : ''}>Thriller</option>
-                            <option value="Romance" ${book.category === 'Romance' ? 'selected' : ''}>Romance</option>
-                            <option value="Self-Help" ${book.category === 'Self-Help' ? 'selected' : ''}>Self-Help</option>
-                            <option value="Business" ${book.category === 'Business' ? 'selected' : ''}>Business</option>
-                            <option value="History" ${book.category === 'History' ? 'selected' : ''}>History</option>
-                            <option value="Science" ${book.category === 'Science' ? 'selected' : ''}>Science</option>
-                            <option value="Poetry" ${book.category === 'Poetry' ? 'selected' : ''}>Poetry</option>
-                            <option value="Drama" ${book.category === 'Drama' ? 'selected' : ''}>Drama</option>
-                            <option value="Computer Science" ${book.category === 'Computer Science' ? 'selected' : ''}>Computer Science</option>
-                            <option value="Mathematics" ${book.category === 'Mathematics' ? 'selected' : ''}>Mathematics</option>
-                            <option value="Chemistry" ${book.category === 'Chemistry' ? 'selected' : ''}>Chemistry</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="editDescription">Description</label>
-                        <textarea id="editDescription" rows="4">${book.description || ''}</textarea>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="editTotalCopies">Total Copies</label>
-                            <input type="number" id="editTotalCopies" value="${book.total_copies}" min="1" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="editAvailableCopies">Available Copies</label>
-                            <input type="number" id="editAvailableCopies" value="${book.available_copies}" min="0" required>
-                        </div>
-                    </div>
-                    <button type="submit" class="submit-btn">
-                        <i class="fas fa-save"></i> Update Book
-                    </button>
-                </form>
-                <p id="editMessage" class="message"></p>
-            </div>
-        `;
-        
+        const editModal = createEditModal(book, bookId);
         document.body.appendChild(editModal);
         
-        const editForm = document.getElementById('editBookForm');
-        editForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const token = auth.getToken();
-            const editMessage = document.getElementById('editMessage');
-            
-            const updatedData = {
-                title: document.getElementById('editTitle').value.trim(),
-                author: document.getElementById('editAuthor').value.trim(),
-                isbn: document.getElementById('editISBN').value.trim(),
-                category: document.getElementById('editCategory').value,
-                description: document.getElementById('editDescription').value.trim(),
-                total_copies: parseInt(document.getElementById('editTotalCopies').value),
-                available_copies: parseInt(document.getElementById('editAvailableCopies').value)
-            };
-            
-            if (updatedData.available_copies > updatedData.total_copies) {
-                showMessage(editMessage, 'Available copies cannot exceed total copies', 'error');
-                return;
-            }
-            
-            try {
-                const response = await fetch(`${BACKEND_URL}/books/${bookId}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(updatedData)
-                });
-                
-                const data = await response.json();
-                
-                if (response.ok) {
-                    showMessage(editMessage, 'Book updated successfully!', 'success');
-                    
-                    setTimeout(() => {
-                        editModal.remove();
-                        loadAdminBooks();
-                        loadAdminStats();
-                    }, 1500);
-                    
-                } else {
-                    showMessage(editMessage, `${data.message || 'Error updating book'}`, 'error');
-                }
-            } catch (error) {
-                console.error('Error updating book:', error);
-                showMessage(editMessage, 'Error connecting to server', 'error');
-            }
-        });
-        
-        editModal.addEventListener('click', (e) => {
-            if (e.target === editModal) {
-                editModal.remove();
-            }
-        });
-        
     } catch (error) {
-        console.error('Error editing book:', error);
         alert('Error loading book details');
+    }
+}
+
+function createEditModal(book, bookId) {
+    const editModal = document.createElement('div');
+    editModal.className = 'modal';
+    editModal.style.display = 'block';
+    editModal.innerHTML = `
+        <div class="modal-content">
+            <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
+            <h2><i class="fas fa-edit"></i> Edit Book</h2>
+            <form id="editBookForm" class="book-form">
+                ${createEditFormFields(book)}
+                <button type="submit" class="submit-btn">
+                    <i class="fas fa-save"></i> Update Book
+                </button>
+            </form>
+            <p id="editMessage" class="message"></p>
+        </div>
+    `;
+    
+    const editForm = document.getElementById('editBookForm');
+    editForm.addEventListener('submit', (e) => handleEditSubmit(e, bookId, editModal));
+    
+    editModal.addEventListener('click', (e) => {
+        if (e.target === editModal) {
+            editModal.remove();
+        }
+    });
+    
+    return editModal;
+}
+
+function createEditFormFields(book) {
+    const categories = ['Fiction', 'African Literature', 'Science Fiction', 'Biography', 'Mystery', 
+                       'Thriller', 'Romance', 'Self-Help', 'Business', 'History', 'Science', 
+                       'Poetry', 'Drama', 'Computer Science', 'Mathematics', 'Chemistry'];
+    
+    const categoryOptions = categories.map(cat => 
+        `<option value="${cat}" ${book.category === cat ? 'selected' : ''}>${cat}</option>`
+    ).join('');
+    
+    return `
+        <div class="form-group">
+            <label for="editTitle">Title</label>
+            <input type="text" id="editTitle" value="${escapeHtml(book.title)}" required>
+        </div>
+        <div class="form-group">
+            <label for="editAuthor">Author</label>
+            <input type="text" id="editAuthor" value="${escapeHtml(book.author)}" required>
+        </div>
+        <div class="form-group">
+            <label for="editISBN">ISBN</label>
+            <input type="text" id="editISBN" value="${escapeHtml(book.isbn)}" required>
+        </div>
+        <div class="form-group">
+            <label for="editCategory">Category</label>
+            <select id="editCategory" required>
+                ${categoryOptions}
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="editDescription">Description</label>
+            <textarea id="editDescription" rows="4">${escapeHtml(book.description || '')}</textarea>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="editTotalCopies">Total Copies</label>
+                <input type="number" id="editTotalCopies" value="${book.total_copies}" min="1" required>
+            </div>
+            <div class="form-group">
+                <label for="editAvailableCopies">Available Copies</label>
+                <input type="number" id="editAvailableCopies" value="${book.available_copies}" min="0" required>
+            </div>
+        </div>
+    `;
+}
+
+async function handleEditSubmit(e, bookId, editModal) {
+    e.preventDefault();
+    
+    const token = auth.getToken();
+    const editMessage = document.getElementById('editMessage');
+    
+    const updatedData = {
+        title: document.getElementById('editTitle').value.trim(),
+        author: document.getElementById('editAuthor').value.trim(),
+        isbn: document.getElementById('editISBN').value.trim(),
+        category: document.getElementById('editCategory').value,
+        description: document.getElementById('editDescription').value.trim(),
+        total_copies: parseInt(document.getElementById('editTotalCopies').value),
+        available_copies: parseInt(document.getElementById('editAvailableCopies').value)
+    };
+    
+    if (updatedData.available_copies > updatedData.total_copies) {
+        showMessage(editMessage, 'Available copies cannot exceed total copies', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${BACKEND_URL}/books/${bookId}`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(updatedData)
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            showMessage(editMessage, 'Book updated successfully!', 'success');
+            
+            setTimeout(() => {
+                editModal.remove();
+                loadAdminBooks();
+                loadAdminStats();
+            }, 1500);
+            
+        } else {
+            showMessage(editMessage, data.message || 'Error updating book', 'error');
+        }
+    } catch (error) {
+        showMessage(editMessage, 'Error connecting to server', 'error');
     }
 }
 
@@ -719,10 +778,9 @@ async function deleteBook(bookId) {
             loadAdminStats();
         } else {
             const data = await response.json();
-            alert(`${data.message || 'Error deleting book'}`);
+            alert(data.message || 'Error deleting book');
         }
     } catch (error) {
-        console.error('Error deleting book:', error);
         alert('Error connecting to server');
     }
 }

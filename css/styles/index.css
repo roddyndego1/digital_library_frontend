@@ -1,5 +1,5 @@
 .hero {
-    background: url('https://images.unsplash.com/photo-1505664194779-8beaceb93744?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D');
+    background: url('https://images.squarespace-cdn.com/content/v1/534ad50ae4b04a5110f5ae72/c4732bf1-a828-4a34-a5db-2ec012d3ffa3/Biblioth%C3%A8que+Sainte-Genevi%C3%A8ve%2C+Paris%2C+1850.jpg?format=1500w');
     background-size: cover;
     background-position: center;
     color: #f5e9d9;
@@ -43,12 +43,12 @@
     border-radius: 8px 0 0 8px;
     font-size: 1rem;
     background: #fffaf0;
-    color: #3d2c2e;
+    color: #810b19;
     font-family: 'Georgia', serif;
 }
 
 .search-container button {
-    background-color: #8b5a2b;
+    background-color: #ba0f0f;
     color: #f5e9d9;
     border: none;
     padding: 0 1.5rem;
@@ -58,7 +58,7 @@
 }
 
 .search-container button:hover {
-    background-color: #a67c52;
+    background-color: #d23838;
 }
 
 .filter-container {
@@ -67,12 +67,12 @@
 
 .filter-container select {
     padding: 0.8rem 1.5rem;
-    border: 1px solid #8b5a2b;
+    border: 1px solid #8b2b2b;
     border-radius: 6px;
     font-size: 1rem;
     min-width: 200px;
     background-color: #fffaf0;
-    color: #3d2c2e;
+    color: #5e1111;
     box-shadow: 0 3px 10px rgba(0,0,0,0.1);
     cursor: pointer;
     font-family: 'Georgia', serif;
@@ -81,7 +81,7 @@
 .books-section h2 {
     text-align: center;
     margin-bottom: 3rem;
-    color: #5d4037;
+    color: #a73232;
     font-size: 2rem;
     position: relative;
     padding-bottom: 10px;
@@ -95,7 +95,7 @@
     transform: translateX(-50%);
     width: 100px;
     height: 3px;
-    background: #8b5a2b;
+    background: #891010;
 }
 
 .books-grid {
@@ -121,7 +121,7 @@
 .book-card:hover {
     transform: translateY(-5px);
     box-shadow: 0 10px 25px rgba(93, 64, 55, 0.2);
-    border-color: #8b5a2b;
+    border-color: #b82121;
 }
 
 .book-card:nth-child(odd) {
@@ -172,7 +172,7 @@
 }
 
 .book-category-badge {
-    background: rgba(139, 90, 43, 0.85);
+    background: rgba(176, 18, 18, 0.85);
     color: #f5e9d9;
     padding: 0.3rem 0.8rem;
     border-radius: 15px;
@@ -193,14 +193,14 @@
 .book-title {
     font-size: 1.2rem;
     margin-bottom: 0.8rem;
-    color: #3e2723;
+    color: #310404;
     font-weight: 600;
     line-height: 1.4;
     min-height: 3.4rem;
 }
 
 .book-author, .book-isbn {
-    color: #5d4037;
+    color: #5c0808;
     margin-bottom: 0.5rem;
     font-size: 0.9rem;
     display: flex;
@@ -209,7 +209,7 @@
 }
 
 .book-author i, .book-isbn i {
-    color: #8b5a2b;
+    color: #540707;
     width: 16px;
 }
 
@@ -224,7 +224,7 @@
 }
 
 .book-copies {
-    color: #795548;
+    color: #640e0e;
     font-size: 0.9rem;
     display: flex;
     align-items: center;
@@ -232,7 +232,7 @@
 }
 
 .book-copies i {
-    color: #8b5a2b;
+    color: #811616;
 }
 
 .book-status {
@@ -245,7 +245,7 @@
 
 .status-available {
     background-color: #e8f5e9;
-    color: #2e7d32;
+    color: #4339cd;
     border: 1px solid #c8e6c9;
 }
 
@@ -261,7 +261,7 @@
 }
 
 .book-description {
-    color: #795548;
+    color: #881b1b;
     font-size: 0.9rem;
     line-height: 1.5;
     display: -webkit-box;
@@ -294,21 +294,21 @@
 }
 
 .borrow-btn {
-    background: linear-gradient(135deg, #8b5a2b, #a67c52);
+    background: linear-gradient(135deg, #860f0f, #cf2323);
     color: #f5e9d9;
-    border: 1px solid #8b5a2b;
+    border: none;
 }
 
 .borrow-btn:hover:not(:disabled) {
-    background: linear-gradient(135deg, #a67c52, #8b5a2b);
+    background: linear-gradient(135deg, #d24141, #741313);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(139, 90, 43, 0.3);
+    box-shadow: 0 4px 12px rgba(98, 8, 8, 0.992);
 }
 
 .borrow-btn:disabled {
     background: #bcaaa4;
-    color: #5d4037;
-    border: 1px solid #a1887f;
+    color: #3a0909;
+    border: 1px solid #d39595;
     cursor: not-allowed;
 }
 

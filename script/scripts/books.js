@@ -1,32 +1,32 @@
+const BACKEND_URL = 'https://digital-library-backend-render.onrender.com';
+
 document.addEventListener('DOMContentLoaded', function () {
     loadBooks();
+    setupEventListeners();
+    checkBackendStatus();
+});
 
+function setupEventListeners() {
     const searchBtn = document.getElementById('searchBtn');
     const searchInput = document.getElementById('searchInput');
     const categoryFilter = document.getElementById('categoryFilter');
 
-    if (searchBtn) {
+    if (searchBtn && searchInput && categoryFilter) {
         searchBtn.addEventListener('click', () => {
             loadBooks(searchInput.value, categoryFilter.value);
         });
-    }
 
-    if (searchInput) {
         searchInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 loadBooks(searchInput.value, categoryFilter.value);
             }
         });
-    }
 
-    if (categoryFilter) {
         categoryFilter.addEventListener('change', () => {
             loadBooks(searchInput.value, categoryFilter.value);
         });
     }
-
-    checkBackendStatus();
-});
+}
 
 async function loadBooks(searchTerm = '', category = '') {
     const loadingElement = document.getElementById('loading');
@@ -39,26 +39,16 @@ async function loadBooks(searchTerm = '', category = '') {
 
     try {
         const response = await fetch(`${BACKEND_URL}/books`);
+        
+        if (!response.ok) {
+            throw new Error(`Failed to load books: ${response.status}`);
+        }
+        
         const books = await response.json();
 
         if (loadingElement) loadingElement.style.display = 'none';
 
-        let filteredBooks = books;
-
-        if (searchTerm) {
-            const term = searchTerm.toLowerCase();
-            filteredBooks = filteredBooks.filter(book =>
-                book.title.toLowerCase().includes(term) ||
-                book.author.toLowerCase().includes(term) ||
-                (book.category && book.category.toLowerCase().includes(term))
-            );
-        }
-
-        if (category) {
-            filteredBooks = filteredBooks.filter(book =>
-                book.category === category
-            );
-        }
+        let filteredBooks = filterBooks(books, searchTerm, category);
 
         if (filteredBooks.length === 0) {
             if (noBooksElement) noBooksElement.style.display = 'block';
@@ -66,7 +56,6 @@ async function loadBooks(searchTerm = '', category = '') {
             displayBooks(filteredBooks);
         }
     } catch (error) {
-        console.error('Error loading books:', error);
         if (loadingElement) loadingElement.style.display = 'none';
         if (booksContainer) {
             booksContainer.innerHTML = `
@@ -78,32 +67,70 @@ async function loadBooks(searchTerm = '', category = '') {
     }
 }
 
+function filterBooks(books, searchTerm, category) {
+    let filtered = books;
+
+    if (searchTerm) {
+        const term = searchTerm.toLowerCase().trim();
+        filtered = filtered.filter(book =>
+            book.title.toLowerCase().includes(term) ||
+            book.author.toLowerCase().includes(term) ||
+            (book.category && book.category.toLowerCase().includes(term))
+        );
+    }
+
+    if (category) {
+        filtered = filtered.filter(book => book.category === category);
+    }
+
+    return filtered;
+}
+
 function displayBooks(books) {
     const booksContainer = document.getElementById('booksContainer');
+    if (!booksContainer) return;
+
     const user = auth.getUser();
+    booksContainer.innerHTML = books.map(book => createBookCard(book, user)).join('');
+}
 
-    booksContainer.innerHTML = books.map(book => {
-        const coverImage = getBookCover(book);
+function createBookCard(book, user) {
+    const coverImage = getBookCover(book);
+    const canBorrow = user && book.available_copies > 0;
+    const borrowButton = canBorrow
+        ? `<button class="borrow-btn" onclick="borrowBook(${book.id})" title="Borrow this book">
+            <i class="fas fa-bookmark"></i> Borrow Now
+        </button>`
+        : `<button class="borrow-btn" disabled title="${user ? 'No copies available' : 'Login to borrow'}">
+            <i class="fas ${user ? 'fa-times-circle' : 'fa-lock'}"></i>
+            ${user ? 'Not Available' : 'Login to Borrow'}
+        </button>`;
 
-        return `
+    const description = book.description 
+        ? `<div class="book-description-container">
+            <p class="book-description">${escapeHtml(book.description.substring(0, 120))}...</p>
+        </div>`
+        : '';
+
+    return `
         <div class="book-card">
             <div class="book-cover-container">
                 <div class="book-cover">
-                    <img src="${coverImage}" alt="${book.title}" class="book-cover-img" 
+                    <img src="${coverImage}" alt="${escapeHtml(book.title)}" class="book-cover-img" 
                          loading="lazy"
                          onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&h=500&fit=fill&crop=faces';">
                 </div>
                 <div class="book-cover-overlay">
-                    <span class="book-category-badge">${book.category || 'General'}</span>
+                    <span class="book-category-badge">${escapeHtml(book.category || 'General')}</span>
                 </div>
             </div>
             <div class="book-info">
-                <h3 class="book-title" title="${book.title}">${book.title}</h3>
-                <p class="book-author" title="${book.author}">
-                    <i class="fas fa-user-edit"></i> ${book.author}
+                <h3 class="book-title" title="${escapeHtml(book.title)}">${escapeHtml(book.title)}</h3>
+                <p class="book-author" title="${escapeHtml(book.author)}">
+                    <i class="fas fa-user-edit"></i> ${escapeHtml(book.author)}
                 </p>
                 <p class="book-isbn">
-                    <i class="fas fa-barcode"></i> ${book.isbn}
+                    <i class="fas fa-barcode"></i> ${escapeHtml(book.isbn)}
                 </p>
                 <div class="book-meta">
                     <span class="book-copies">
@@ -113,28 +140,19 @@ function displayBooks(books) {
                         ${book.available_copies > 0 ? 'Available' : 'Out of Stock'}
                     </span>
                 </div>
-                ${book.description ? `
-                <div class="book-description-container">
-                    <p class="book-description">${book.description.substring(0, 120)}...</p>
-                </div>
-                ` : ''}
-                
+                ${description}
                 <div class="book-actions">
-                    ${user && book.available_copies > 0 ? `
-                        <button class="borrow-btn" onclick="borrowBook(${book.id})" title="Borrow this book">
-                            <i class="fas fa-bookmark"></i> Borrow Now
-                        </button>
-                    ` : `
-                        <button class="borrow-btn" disabled title="${user ? 'No copies available' : 'Login to borrow'}">
-                            <i class="fas ${user ? 'fa-times-circle' : 'fa-lock'}"></i>
-                            ${user ? 'Not Available' : 'Login to Borrow'}
-                        </button>
-                    `}
+                    ${borrowButton}
                 </div>
             </div>
         </div>
-        `;
-    }).join('');
+    `;
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 function getBookCover(book) {
@@ -187,11 +205,14 @@ function getBookCover(book) {
 }
 
 async function borrowBook(bookId) {
-    const token = auth.getToken();
+    if (!bookId) return;
 
+    const token = auth.getToken();
     if (!token) {
         alert('Please login to borrow books');
-        showLoginModal();
+        if (window.showAuthModal) {
+            window.showAuthModal('login');
+        }
         return;
     }
 
@@ -211,21 +232,19 @@ async function borrowBook(bookId) {
         const data = await response.json();
 
         if (response.ok) {
-            alert('Book borrowed successfully!\nDue date: ' +
-                new Date(data.due_date).toLocaleDateString());
+            const dueDate = new Date(data.due_date).toLocaleDateString();
+            alert(`Book borrowed successfully!\nDue date: ${dueDate}`);
             loadBooks();
         } else {
             alert(data.message || 'Error borrowing book');
         }
     } catch (error) {
-        console.error('Error borrowing book:', error);
         alert('Error borrowing book. Please try again.');
     }
 }
 
 async function checkBackendStatus() {
     const backendStatus = document.getElementById('backendStatus');
-
     if (!backendStatus) return;
 
     try {

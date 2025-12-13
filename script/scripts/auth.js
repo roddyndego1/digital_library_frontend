@@ -1,48 +1,33 @@
 const BACKEND_URL = 'https://digital-library-backend-render.onrender.com';
 
-let loginModal, registerModal;
+let authModal;
 let currentUser = null;
 
 document.addEventListener('DOMContentLoaded', function () {
-    loginModal = document.getElementById('loginModal');
-    registerModal = document.getElementById('registerModal');
-
+    authModal = document.getElementById('authModal');
     setupAuthListeners();
-
     checkAuthStatus();
 });
 
 function setupAuthListeners() {
-    const loginBtn = document.getElementById('loginBtn');
-    const registerBtn = document.getElementById('registerBtn');
     const logoutBtn = document.getElementById('logoutBtn');
-
-    if (loginBtn) {
-        loginBtn.addEventListener('click', showLoginModal);
-    }
-
-    if (registerBtn) {
-        registerBtn.addEventListener('click', showRegisterModal);
-    }
-
     if (logoutBtn) {
         logoutBtn.addEventListener('click', logout);
     }
 
-    const closeButtons = document.querySelectorAll('.close');
-    closeButtons.forEach(button => {
-        button.addEventListener('click', function () {
-            this.parentElement.parentElement.style.display = 'none';
-        });
-    });
+    const closeButton = document.querySelector('.close');
+    if (closeButton) {
+        closeButton.addEventListener('click', handleModalClose);
+    }
 
-    window.addEventListener('click', function (event) {
-        if (loginModal && event.target === loginModal) {
-            loginModal.style.display = 'none';
-        }
-        if (registerModal && event.target === registerModal) {
-            registerModal.style.display = 'none';
-        }
+    window.addEventListener('click', handleModalClick);
+
+    const authTabs = document.querySelectorAll('.auth-tab');
+    authTabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            const tabName = this.getAttribute('data-tab');
+            switchAuthTab(tabName);
+        });
     });
 
     const loginForm = document.getElementById('loginForm');
@@ -56,25 +41,80 @@ function setupAuthListeners() {
     }
 }
 
-function showLoginModal() {
-    if (loginModal) {
-        loginModal.style.display = 'block';
-        document.getElementById('loginMessage').textContent = '';
+function handleModalClose() {
+    const token = localStorage.getItem('token');
+    if (!token && isIndexPage()) {
+        return;
+    }
+    if (authModal) {
+        authModal.style.display = 'none';
     }
 }
 
-function showRegisterModal() {
-    if (registerModal) {
-        registerModal.style.display = 'block';
-        document.getElementById('registerMessage').textContent = '';
+function handleModalClick(event) {
+    const token = localStorage.getItem('token');
+    if (!token && isIndexPage()) {
+        return;
     }
+    if (authModal && event.target === authModal) {
+        authModal.style.display = 'none';
+    }
+}
+
+function isIndexPage() {
+    const path = window.location.pathname;
+    return path.includes('index.html') || path === '/' || path.endsWith('/');
+}
+
+function switchAuthTab(tabName) {
+    const tabs = document.querySelectorAll('.auth-tab');
+    const sections = document.querySelectorAll('.auth-section');
+    
+    tabs.forEach(tab => {
+        if (tab.getAttribute('data-tab') === tabName) {
+            tab.classList.add('active');
+        } else {
+            tab.classList.remove('active');
+        }
+    });
+    
+    sections.forEach(section => {
+        if (section.id === `${tabName}Section`) {
+            section.classList.add('active');
+        } else {
+            section.classList.remove('active');
+        }
+    });
+}
+
+function showAuthModal(tab = 'login') {
+    if (!authModal) return;
+    
+    authModal.style.display = 'block';
+    switchAuthTab(tab);
+    
+    const loginMessage = document.getElementById('loginMessage');
+    const registerMessage = document.getElementById('registerMessage');
+    if (loginMessage) loginMessage.textContent = '';
+    if (registerMessage) registerMessage.textContent = '';
 }
 
 async function handleLogin(e) {
     e.preventDefault();
 
-    const email = document.getElementById('loginEmail').value;
-    const password = document.getElementById('loginPassword').value;
+    const emailInput = document.getElementById('loginEmail');
+    const passwordInput = document.getElementById('loginPassword');
+    const messageElement = document.getElementById('loginMessage');
+    
+    if (!emailInput || !passwordInput || !messageElement) return;
+
+    const email = emailInput.value.trim();
+    const password = passwordInput.value;
+
+    if (!email || !password) {
+        messageElement.textContent = 'Please fill in all fields';
+        return;
+    }
 
     try {
         const response = await fetch(`${BACKEND_URL}/login`, {
@@ -96,29 +136,42 @@ async function handleLogin(e) {
             }));
 
             updateAuthUI(data.role);
-
-            if (loginModal) loginModal.style.display = 'none';
-            document.getElementById('loginForm').reset();
-            document.getElementById('loginMessage').textContent = '';
-
-            alert('Login successful!');
-
-            window.location.reload();
+            
+            if (authModal) authModal.style.display = 'none';
+            emailInput.value = '';
+            passwordInput.value = '';
+            messageElement.textContent = '';
+            
+            showNavbar();
         } else {
-            document.getElementById('loginMessage').textContent = data.message || 'Login failed';
+            messageElement.textContent = data.message || 'Login failed';
+            messageElement.style.color = 'red';
         }
     } catch (error) {
-        console.error('Login error:', error);
-        document.getElementById('loginMessage').textContent = 'Error connecting to server';
+        messageElement.textContent = 'Error connecting to server. Please try again.';
+        messageElement.style.color = 'red';
     }
 }
 
 async function handleRegister(e) {
     e.preventDefault();
 
-    const name = document.getElementById('regName').value;
-    const email = document.getElementById('regEmail').value;
-    const password = document.getElementById('regPassword').value;
+    const nameInput = document.getElementById('regName');
+    const emailInput = document.getElementById('regEmail');
+    const passwordInput = document.getElementById('regPassword');
+    const messageElement = document.getElementById('registerMessage');
+    
+    if (!nameInput || !emailInput || !passwordInput || !messageElement) return;
+
+    const name = nameInput.value.trim();
+    const email = emailInput.value.trim();
+    const password = passwordInput.value;
+
+    if (!name || !email || !password) {
+        messageElement.textContent = 'Please fill in all fields';
+        messageElement.style.color = 'red';
+        return;
+    }
 
     try {
         const response = await fetch(`${BACKEND_URL}/register`, {
@@ -132,22 +185,53 @@ async function handleRegister(e) {
         const data = await response.json();
 
         if (response.ok) {
-            document.getElementById('registerMessage').textContent = 'Registration successful! Please login.';
-            document.getElementById('registerMessage').style.color = 'green';
-
-            setTimeout(() => {
-                if (registerModal) registerModal.style.display = 'none';
-                if (loginModal) loginModal.style.display = 'block';
-                document.getElementById('registerForm').reset();
-            }, 2000);
+            await autoLoginAfterRegistration(email, password, messageElement);
         } else {
-            document.getElementById('registerMessage').textContent = data.message || 'Registration failed';
-            document.getElementById('registerMessage').style.color = 'red';
+            messageElement.textContent = data.message || 'Registration failed';
+            messageElement.style.color = 'red';
         }
     } catch (error) {
-        console.error('Registration error:', error);
-        document.getElementById('registerMessage').textContent = 'Error connecting to server';
-        document.getElementById('registerMessage').style.color = 'red';
+        messageElement.textContent = 'Error connecting to server. Please try again.';
+        messageElement.style.color = 'red';
+    }
+}
+
+async function autoLoginAfterRegistration(email, password, messageElement) {
+    try {
+        const loginResponse = await fetch(`${BACKEND_URL}/login`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email, password })
+        });
+
+        const loginData = await loginResponse.json();
+
+        if (loginResponse.ok) {
+            localStorage.setItem('token', loginData.token);
+            localStorage.setItem('user', JSON.stringify({
+                email: email,
+                role: loginData.role,
+                userId: loginData.userId
+            }));
+
+            updateAuthUI(loginData.role);
+            
+            if (authModal) authModal.style.display = 'none';
+            document.getElementById('registerForm').reset();
+            messageElement.textContent = '';
+            
+            showNavbar();
+        } else {
+            messageElement.textContent = 'Registration successful! Please login.';
+            messageElement.style.color = 'green';
+            switchAuthTab('login');
+        }
+    } catch (error) {
+        messageElement.textContent = 'Registration successful! Please login.';
+        messageElement.style.color = 'green';
+        switchAuthTab('login');
     }
 }
 
@@ -159,50 +243,82 @@ function checkAuthStatus() {
         try {
             currentUser = JSON.parse(userData);
             updateAuthUI(currentUser.role);
-        } catch (e) {
-            console.error('Error parsing user data:', e);
+            showNavbar();
+        } catch (error) {
             logout();
         }
     } else {
         updateAuthUI(null);
+        if (isIndexPage()) {
+            showAuthModal('login');
+        } else {
+            window.location.href = 'index.html';
+        }
+    }
+}
+
+function showNavbar() {
+    const navbar = document.getElementById('mainNavbar');
+    if (navbar) {
+        navbar.style.display = 'block';
     }
 }
 
 function updateAuthUI(role) {
-    const loginBtn = document.getElementById('loginBtn');
-    const registerBtn = document.getElementById('registerBtn');
     const logoutBtn = document.getElementById('logoutBtn');
     const adminLink = document.getElementById('adminLink');
+    const userProfile = document.getElementById('userProfile');
+    const userName = document.getElementById('userName');
     const userWelcome = document.getElementById('userWelcome');
     const adminWelcome = document.getElementById('adminWelcome');
 
     if (role) {
-        if (loginBtn) loginBtn.style.display = 'none';
-        if (registerBtn) registerBtn.style.display = 'none';
         if (logoutBtn) logoutBtn.style.display = 'block';
 
         if (adminLink && role === 'admin') {
             adminLink.style.display = 'block';
         }
 
+        if (userProfile) {
+            userProfile.style.display = 'flex';
+        }
+
+        const user = getUserData();
+        const displayName = getUserDisplayName(user);
+
+        if (userName && user) {
+            userName.textContent = displayName;
+        }
+
         if (userWelcome) {
-            const user = JSON.parse(localStorage.getItem('user'));
-            userWelcome.textContent = `Welcome, ${user.email}`;
+            userWelcome.textContent = `Welcome, ${displayName}`;
         }
 
         if (adminWelcome && role === 'admin') {
-            const user = JSON.parse(localStorage.getItem('user'));
-            adminWelcome.textContent = `Welcome, Admin ${user.email}`;
+            adminWelcome.textContent = `Welcome, Admin ${displayName}`;
         }
     } else {
-        if (loginBtn) loginBtn.style.display = 'block';
-        if (registerBtn) registerBtn.style.display = 'block';
         if (logoutBtn) logoutBtn.style.display = 'none';
         if (adminLink) adminLink.style.display = 'none';
+        if (userProfile) userProfile.style.display = 'none';
 
-        if (userWelcome) userWelcome.textContent = 'Please login to view your borrows';
-        if (adminWelcome) adminWelcome.textContent = '';
+        if (userWelcome) {
+            userWelcome.textContent = 'Please login to view your borrows';
+        }
+        if (adminWelcome) {
+            adminWelcome.textContent = '';
+        }
     }
+}
+
+function getUserData() {
+    const user = localStorage.getItem('user');
+    return user ? JSON.parse(user) : null;
+}
+
+function getUserDisplayName(user) {
+    if (!user) return 'User';
+    return user.name || user.email.split('@')[0];
 }
 
 function logout() {
@@ -212,7 +328,7 @@ function logout() {
     updateAuthUI(null);
 
     if (window.location.pathname.includes('admin.html') ||
-        window.location.pathname.includes('borrow.html')) {
+        window.location.pathname.includes('user.html')) {
         window.location.href = 'index.html';
     } else {
         window.location.reload();
@@ -228,7 +344,11 @@ window.auth = {
     isAdmin: () => {
         const user = localStorage.getItem('user');
         if (!user) return false;
-        return JSON.parse(user).role === 'admin';
+        try {
+            return JSON.parse(user).role === 'admin';
+        } catch {
+            return false;
+        }
     },
     logout: logout
 };
