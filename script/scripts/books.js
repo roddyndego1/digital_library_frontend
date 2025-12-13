@@ -1,8 +1,5 @@
-// Use window.BACKEND_URL directly - declared in auth.js (loaded first)
-// Create a getter function to avoid redeclaration
-function getBackendUrl() {
-    return (typeof window !== 'undefined' && window.BACKEND_URL) || 'https://ibooks-digital-library-backend.onrender.com';
-}
+// Use window.BACKEND_URL - declared once in auth.js (loaded first)
+// No local declaration needed, just use window.BACKEND_URL directly
 
 document.addEventListener('DOMContentLoaded', function () {
     loadBooks();
@@ -42,7 +39,7 @@ async function loadBooks(searchTerm = '', category = '') {
     if (booksContainer) booksContainer.innerHTML = '';
 
     try {
-        const response = await fetch(`${getBackendUrl()}/books`);
+        const response = await fetch(`${window.BACKEND_URL}/books`);
         
         if (!response.ok) {
             throw new Error(`Failed to load books: ${response.status}`);
@@ -252,7 +249,7 @@ async function checkBackendStatus() {
     if (!backendStatus) return;
 
     try {
-        const response = await fetch(`${getBackendUrl()}/test-db`);
+        const response = await fetch(`${window.BACKEND_URL}/test-db`);
         const data = await response.json();
 
         if (data.success) {

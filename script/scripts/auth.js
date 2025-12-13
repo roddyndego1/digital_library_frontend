@@ -1,9 +1,7 @@
-// Use window object to share BACKEND_URL across all scripts
-if (typeof window.BACKEND_URL === 'undefined') {
-    window.BACKEND_URL = 'https://ibooks-digital-library-backend.onrender.com';
-}
-// Use window.BACKEND_URL directly to avoid const redeclaration
-const BACKEND_URL = window.BACKEND_URL || 'https://ibooks-digital-library-backend.onrender.com';
+// Declare BACKEND_URL once - shared across all scripts
+window.BACKEND_URL = 'https://ibooks-digital-library-backend.onrender.com';
+// BACKEND_URL is now only declared once on window object above
+// Use window.BACKEND_URL directly throughout this file
 
 let authModal;
 let currentUser = null;
@@ -17,7 +15,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 async function testBackendConnection() {
     try {
-        const response = await fetch(`${BACKEND_URL}/test-db`);
+        const response = await fetch(`${window.BACKEND_URL}/test-db`);
         const data = await response.json();
         console.log('Backend connection test:', data);
     } catch (error) {
@@ -140,7 +138,7 @@ async function handleLogin(e) {
     }
 
     try {
-        const response = await fetch(`${BACKEND_URL}/login`, {
+        const response = await fetch(`${window.BACKEND_URL}/login`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -215,7 +213,7 @@ async function handleRegister(e) {
     }
 
     try {
-        const response = await fetch(`${BACKEND_URL}/register`, {
+        const response = await fetch(`${window.BACKEND_URL}/register`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -250,7 +248,7 @@ async function handleRegister(e) {
 
 async function autoLoginAfterRegistration(email, password, messageElement) {
     try {
-        const loginResponse = await fetch(`${BACKEND_URL}/login`, {
+        const loginResponse = await fetch(`${window.BACKEND_URL}/login`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

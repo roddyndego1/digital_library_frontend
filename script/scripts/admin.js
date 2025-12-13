@@ -1,8 +1,5 @@
-// Use window.getBackendUrl() directly - declared in auth.js (loaded first)
-// Create a getter function to avoid redeclaration
-function getBackendUrl() {
-    return (typeof window !== 'undefined' && window.getBackendUrl()) || 'https://ibooks-digital-library-backend.onrender.com';
-}
+// Use window.BACKEND_URL - declared once in auth.js (loaded first)
+// No local declaration needed, just use window.BACKEND_URL directly
 
 document.addEventListener('DOMContentLoaded', function() {
     if (!auth.isAdmin()) {
@@ -78,7 +75,7 @@ async function loadAdminStats() {
     try {
         const token = auth.getToken();
         
-        const booksResponse = await fetch(`${getBackendUrl()}/books`);
+        const booksResponse = await fetch(`${window.BACKEND_URL}/books`);
         if (!booksResponse.ok) {
             throw new Error('Failed to load books');
         }
@@ -105,7 +102,7 @@ async function loadAdminStats() {
 
 async function getOverdueBooksCount(token) {
     try {
-        const borrowsResponse = await fetch(`${getBackendUrl()}/admin/all-borrows`, {
+        const borrowsResponse = await fetch(`${window.BACKEND_URL}/admin/all-borrows`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -132,7 +129,7 @@ async function getOverdueBooksCount(token) {
 
 async function getTotalUsersCount(token) {
     try {
-        const usersResponse = await fetch(`${getBackendUrl()}/admin/users`, {
+        const usersResponse = await fetch(`${window.BACKEND_URL}/admin/users`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -169,7 +166,7 @@ async function loadRecentActivity() {
     const recentlyReturnedContainer = document.getElementById('recentlyReturned');
     
     try {
-        const response = await fetch(`${getBackendUrl()}/admin/all-borrows`, {
+        const response = await fetch(`${window.BACKEND_URL}/admin/all-borrows`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -289,7 +286,7 @@ async function loadAllBorrowedBooks() {
     container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading borrowed books...</div>';
     
     try {
-        const response = await fetch(`${getBackendUrl()}/admin/all-borrows`, {
+        const response = await fetch(`${window.BACKEND_URL}/admin/all-borrows`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -346,7 +343,7 @@ async function loadAllReturnedBooks() {
     container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading returned books...</div>';
     
     try {
-        const response = await fetch(`${getBackendUrl()}/admin/all-borrows`, {
+        const response = await fetch(`${window.BACKEND_URL}/admin/all-borrows`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -404,7 +401,7 @@ async function loadAdminBooks(searchTerm = '') {
     if (booksContainer) booksContainer.innerHTML = '';
     
     try {
-        const response = await fetch(`${getBackendUrl()}/books`);
+        const response = await fetch(`${window.BACKEND_URL}/books`);
         
         if (!response.ok) {
             throw new Error('Failed to load books');
@@ -576,7 +573,7 @@ async function handleAddBook(e) {
     }
     
     try {
-        const response = await fetch(`${getBackendUrl()}/books`, {
+        const response = await fetch(`${window.BACKEND_URL}/books`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -621,7 +618,7 @@ function showMessage(element, text, type) {
 
 async function editBook(bookId) {
     try {
-        const response = await fetch(`${getBackendUrl()}/books/${bookId}`);
+        const response = await fetch(`${window.BACKEND_URL}/books/${bookId}`);
         if (!response.ok) {
             alert('Error fetching book details');
             return;
@@ -733,7 +730,7 @@ async function handleEditSubmit(e, bookId, editModal) {
     }
     
     try {
-        const response = await fetch(`${getBackendUrl()}/books/${bookId}`, {
+        const response = await fetch(`${window.BACKEND_URL}/books/${bookId}`, {
             method: 'PUT',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -769,7 +766,7 @@ async function deleteBook(bookId) {
     const token = auth.getToken();
     
     try {
-        const response = await fetch(`${getBackendUrl()}/books/${bookId}`, {
+        const response = await fetch(`${window.BACKEND_URL}/books/${bookId}`, {
             method: 'DELETE',
             headers: {
                 'Authorization': `Bearer ${token}`
