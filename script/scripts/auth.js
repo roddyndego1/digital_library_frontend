@@ -2,7 +2,8 @@
 if (typeof window.BACKEND_URL === 'undefined') {
     window.BACKEND_URL = 'https://ibooks-digital-library-backend.onrender.com';
 }
-const BACKEND_URL = window.BACKEND_URL;
+// Use window.BACKEND_URL directly to avoid const redeclaration
+const BACKEND_URL = window.BACKEND_URL || 'https://ibooks-digital-library-backend.onrender.com';
 
 let authModal;
 let currentUser = null;

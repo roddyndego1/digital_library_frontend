@@ -1,8 +1,5 @@
-// Use window object to share BACKEND_URL across all scripts
-if (typeof window.BACKEND_URL === 'undefined') {
-    window.BACKEND_URL = 'https://ibooks-digital-library-backend.onrender.com';
-}
-const BACKEND_URL = window.BACKEND_URL;
+// Use window.BACKEND_URL directly - declared in auth.js (loaded first)
+var BACKEND_URL = (typeof window !== 'undefined' && window.BACKEND_URL) || 'https://ibooks-digital-library-backend.onrender.com';
 
 document.addEventListener('DOMContentLoaded', function() {
     if (!auth.isAdmin()) {
