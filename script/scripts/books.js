@@ -1,5 +1,8 @@
 // Use window.BACKEND_URL directly - declared in auth.js (loaded first)
-var BACKEND_URL = (typeof window !== 'undefined' && window.BACKEND_URL) || 'https://ibooks-digital-library-backend.onrender.com';
+// Create a getter function to avoid redeclaration
+function getBackendUrl() {
+    return (typeof window !== 'undefined' && window.BACKEND_URL) || 'https://ibooks-digital-library-backend.onrender.com';
+}
 
 document.addEventListener('DOMContentLoaded', function () {
     loadBooks();
@@ -39,7 +42,7 @@ async function loadBooks(searchTerm = '', category = '') {
     if (booksContainer) booksContainer.innerHTML = '';
 
     try {
-        const response = await fetch(`${BACKEND_URL}/books`);
+        const response = await fetch(`${getBackendUrl()}/books`);
         
         if (!response.ok) {
             throw new Error(`Failed to load books: ${response.status}`);
@@ -222,7 +225,7 @@ async function borrowBook(bookId) {
     }
 
     try {
-        const response = await fetch(`${BACKEND_URL}/borrow/${bookId}`, {
+        const response = await fetch(`${getBackendUrl()}/borrow/${bookId}`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -249,7 +252,7 @@ async function checkBackendStatus() {
     if (!backendStatus) return;
 
     try {
-        const response = await fetch(`${BACKEND_URL}/test-db`);
+        const response = await fetch(`${getBackendUrl()}/test-db`);
         const data = await response.json();
 
         if (data.success) {

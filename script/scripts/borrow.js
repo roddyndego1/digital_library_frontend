@@ -1,5 +1,8 @@
-// Use window.BACKEND_URL directly - declared in auth.js (loaded first)
-var BACKEND_URL = (typeof window !== 'undefined' && window.BACKEND_URL) || 'https://ibooks-digital-library-backend.onrender.com';
+// Use window.getBackendUrl() directly - declared in auth.js (loaded first)
+// Create a getter function to avoid redeclaration
+function getBackendUrl() {
+    return (typeof window !== 'undefined' && window.getBackendUrl()) || 'https://ibooks-digital-library-backend.onrender.com';
+}
 
 document.addEventListener('DOMContentLoaded', function () {
     const token = auth.getToken();
@@ -47,7 +50,7 @@ async function loadBorrowHistory() {
     if (noDueSoon) noDueSoon.style.display = 'none';
 
     try {
-        const response = await fetch(`${BACKEND_URL}/my-borrows`, {
+        const response = await fetch(`${getBackendUrl()}/my-borrows`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -322,7 +325,7 @@ async function returnBook(borrowId) {
     }
 
     try {
-        const response = await fetch(`${BACKEND_URL}/return-borrow/${borrowId}`, {
+        const response = await fetch(`${getBackendUrl()}/return-borrow/${borrowId}`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
