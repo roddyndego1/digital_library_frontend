@@ -1,4 +1,8 @@
-const BACKEND_URL = 'https://ibooks-digital-library-backend.onrender.com';
+// Use window object to share BACKEND_URL across all scripts
+if (typeof window.BACKEND_URL === 'undefined') {
+    window.BACKEND_URL = 'https://ibooks-digital-library-backend.onrender.com';
+}
+const BACKEND_URL = window.BACKEND_URL;
 
 document.addEventListener('DOMContentLoaded', function () {
     loadBooks();
