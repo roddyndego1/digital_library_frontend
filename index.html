@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ACity Digital Library</title>
+  <link rel="stylesheet" href="css/styles/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+  <!-- Navigation Bar -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <div class="logo">
+        <i class="fas fa-book"></i>
+        <h1>ACity Digital Library</h1>
+      </div>
+      <div class="nav-links">
+        <a href="index.html" class="active">Home</a>
+        <a href="#books">Books</a>
+        <a href="borrow.html">My Borrows</a>
+        <a href="admin.html" id="adminLink" style="display:none;">Admin Panel</a>
+        <div class="auth-buttons">
+          <button id="loginBtn">Login</button>
+          <button id="registerBtn">Register</button>
+          <button id="logoutBtn" style="display:none;">Logout</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Login Modal -->
+  <div id="loginModal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h2>Login</h2>
+      <form id="loginForm">
+        <input type="email" id="loginEmail" placeholder="Email" required>
+        <input type="password" id="loginPassword" placeholder="Password" required>
+        <button type="submit">Login</button>
+      </form>
+      <p id="loginMessage"></p>
+    </div>
+  </div>
+
+  <!-- Register Modal -->
+  <div id="registerModal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h2>Register</h2>
+      <form id="registerForm">
+        <input type="text" id="regName" placeholder="Full Name" required>
+        <input type="email" id="regEmail" placeholder="Email" required>
+        <input type="password" id="regPassword" placeholder="Password" required>
+        <button type="submit">Register</button>
+      </form>
+      <p id="registerMessage"></p>
+    </div>
+  </div>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="hero-content">
+      <h2>Welcome to ACity Digital Library</h2>
+      <p>Explore thousands of books, borrow with ease, and manage your reading journey</p>
+      <div class="search-container">
+        <input type="text" id="searchInput" placeholder="Search books by title, author, or category...">
+        <button id="searchBtn"><i class="fas fa-search"></i></button>
+      </div>
+      <div class="filter-container">
+        <select id="categoryFilter">
+          <option value="">All Categories</option>
+          <option value="Fiction">Fiction</option>
+          <option value="African Literature">African Literature</option>
+          <option value="Science Fiction">Science Fiction</option>
+          <option value="Biography">Biography</option>
+          <option value="Computer Science">Computer Science</option>
+          <option value="Mathematics">Mathematics</option>
+        </select>
+      </div>
+    </div>
+  </section>
+
+  <!-- Books Section -->
+  <section id="books" class="books-section">
+    <h2>Book Catalogue</h2>
+    <div id="booksContainer" class="books-grid">
+      <!-- Books will be loaded here dynamically -->
+    </div>
+    <div id="loading" class="loading">
+      <i class="fas fa-spinner fa-spin"></i> Loading books...
+    </div>
+    <div id="noBooks" class="no-books" style="display:none;">
+      <p>No books found. Try a different search.</p>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <p>&copy; 2025 ACity University Digital Library Catalogue | Created by Reginald Justin Tetteh Nabrah</p>
+    <p>Backend: <span id="backendStatus">Checking...</span></p>
+  </footer>
+
+  <script src="script/scripts/auth.js"></script>
+  <script src="script/scripts/books.js"></script>
+</body>
+
+</html>

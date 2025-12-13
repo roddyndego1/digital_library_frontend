@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - ACity Digital Library</title>
+    <link rel="stylesheet" href="css/styles/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">
+                <i class="fas fa-book"></i>
+                <h1>Admin Panel</h1>
+            </div>
+            <div class="nav-links">
+                <a href="index.html"><i class="fas fa-home"></i> Home</a>
+                <a href="#add-book"><i class="fas fa-plus-circle"></i> Add Book</a>
+                <a href="#manage-books"><i class="fas fa-book"></i> Manage Books</a>
+                <button id="logoutBtn" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="admin-main">
+        <!-- Admin Welcome -->
+        <section class="admin-welcome">
+            <div class="welcome-container">
+                <h2><i class="fas fa-cogs"></i> Admin Dashboard</h2>
+                <p id="adminWelcome" class="welcome-message">Welcome back, Admin</p>
+                <div class="admin-stats">
+                    <div class="stat-card">
+                        <i class="fas fa-book"></i>
+                        <h3 id="totalBooks">0</h3>
+                        <p>Total Books</p>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-users"></i>
+                        <h3>4</h3>
+                        <p>Registered Users</p>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-book-reader"></i>
+                        <h3 id="borrowedBooks">0</h3>
+                        <p>Books Borrowed</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Add New Book Section -->
+        <section id="add-book" class="admin-section">
+            <div class="section-container">
+                <h3><i class="fas fa-plus-circle"></i> Add New Book</h3>
+                <form id="addBookForm" class="book-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="bookTitle"><i class="fas fa-heading"></i> Title</label>
+                            <input type="text" id="bookTitle" placeholder="Enter book title" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="bookAuthor"><i class="fas fa-user-edit"></i> Author</label>
+                            <input type="text" id="bookAuthor" placeholder="Enter author name" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="bookISBN"><i class="fas fa-barcode"></i> ISBN</label>
+                            <input type="text" id="bookISBN" placeholder="Enter ISBN number" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="bookCategory"><i class="fas fa-tag"></i> Category</label>
+                            <select id="bookCategory" required>
+                                <option value="">Select Category</option>
+                                <option value="Fiction">Fiction</option>
+                                <option value="African Literature">African Literature</option>
+                                <option value="Science Fiction">Science Fiction</option>
+                                <option value="Biography">Biography</option>
+                                <option value="Mystery">Mystery</option>
+                                <option value="Thriller">Thriller</option>
+                                <option value="Romance">Romance</option>
+                                <option value="Self-Help">Self-Help</option>
+                                <option value="Business">Business</option>
+                                <option value="History">History</option>
+                                <option value="Science">Science</option>
+                                <option value="Poetry">Poetry</option>
+                                <option value="Drama">Drama</option>
+                                <option value="Computer Science">Computer Science</option>
+                                <option value="Mathematics">Mathematics</option>
+                                <option value="Chemistry">Chemistry</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="bookDescription"><i class="fas fa-align-left"></i> Description</label>
+                        <textarea id="bookDescription" placeholder="Enter book description" rows="4"></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="bookTotalCopies"><i class="fas fa-copy"></i> Total Copies</label>
+                            <input type="number" id="bookTotalCopies" min="1" value="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="bookAvailableCopies"><i class="fas fa-check-circle"></i> Available Copies</label>
+                            <input type="number" id="bookAvailableCopies" min="0" value="1" required>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="submit-btn">
+                        <i class="fas fa-plus"></i> Add Book to Library
+                    </button>
+                </form>
+                <p id="addBookMessage" class="message"></p>
+            </div>
+        </section>
+
+        <!-- Manage Books Section -->
+        <section id="manage-books" class="admin-section">
+            <div class="section-container">
+                <h3><i class="fas fa-book"></i> Manage Books</h3>
+                
+                <div class="search-container">
+                    <input type="text" id="adminSearch" placeholder="Search books by title, author, ISBN, or category...">
+                    <button id="adminSearchBtn"><i class="fas fa-search"></i></button>
+                </div>
+
+                <div id="adminBooksContainer" class="books-grid">
+                    <!-- Books will be loaded here -->
+                </div>
+
+                <div id="adminLoading" class="loading">
+                    <i class="fas fa-spinner fa-spin"></i> Loading books...
+                </div>
+
+                <div id="adminNoBooks" class="no-books" style="display:none;">
+                    <p>No books found. Try a different search or add new books.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2025 ACity University Digital Library | Admin Panel</p>
+        <p>Manage your library collection with ease and precision</p>
+    </footer>
+
+    <script src="script/scripts/auth.js"></script>
+    <script src="script/scripts/admin.js"></script>
+</body>
+</html>

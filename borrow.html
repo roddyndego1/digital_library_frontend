@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Borrows - ACity Digital Library</title>
+    <link rel="stylesheet" href="css/styles/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">
+                <i class="fas fa-book"></i>
+                <h1>My Borrowed Books</h1>
+            </div>
+            <div class="nav-links">
+                <a href="index.html"><i class="fas fa-home"></i> Home</a>
+                <a href="borrow.html" class="active"><i class="fas fa-history"></i> My Borrows</a>
+                <button id="logoutBtn" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="borrow-main">
+        <!-- User Welcome -->
+        <section class="user-welcome">
+            <div class="welcome-container">
+                <h2><i class="fas fa-history"></i> My Borrowing History</h2>
+                <p id="userWelcome" class="welcome-message">Welcome back, Student</p>
+                <div class="user-stats">
+                    <div class="stat-card">
+                        <i class="fas fa-book-open"></i>
+                        <h3 id="currentBorrowsCount">0</h3>
+                        <p>Currently Borrowed</p>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-clock"></i>
+                        <h3 id="dueSoonCount">0</h3>
+                        <p>Due Soon</p>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-check-circle"></i>
+                        <h3 id="returnedCount">0</h3>
+                        <p>Books Returned</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Currently Borrowed Section -->
+        <section class="borrow-section">
+            <div class="section-container">
+                <h3><i class="fas fa-bookmark"></i> Currently Borrowed Books</h3>
+                <p class="section-description">Books you have borrowed and need to return</p>
+                
+                <div id="currentBorrows" class="borrow-list">
+                    <!-- Current borrows will be loaded here -->
+                </div>
+
+                <div id="noCurrentBorrows" class="no-books" style="display:none;">
+                    <p><i class="fas fa-book-open"></i> You don't have any books borrowed at the moment.</p>
+                    <a href="index.html" class="browse-link">
+                        <i class="fas fa-search"></i> Browse Available Books
+                    </a>
+                </div>
+
+                <div id="currentLoading" class="loading">
+                    <i class="fas fa-spinner fa-spin"></i> Loading your borrowed books...
+                </div>
+            </div>
+        </section>
+
+<section class="borrow-section">
+    <div class="section-container">
+        <h3><i class="fas fa-clock"></i> Books Due Soon</h3>
+        <p class="section-description">Books that need to be returned within the next 3 days</p>
+
+        <div id="dueSoon" class="borrow-list">
+            <!-- Due soon books will be loaded here -->
+        </div>
+
+        <div id="noDueSoon" class="no-books" style="display:none;">
+            <p><i class="fas fa-clock"></i> No books due soon.</p>
+        </div>
+
+        <div id="dueSoonLoading" class="loading">
+            <i class="fas fa-spinner fa-spin"></i> Loading books due soon...
+        </div>
+    </div>
+</section>
+
+        <!-- Borrowing History Section -->
+        <section class="borrow-section">
+            <div class="section-container">
+                <h3><i class="fas fa-history"></i> Borrowing History</h3>
+                <p class="section-description">All books you have borrowed from the library</p>
+                
+                <div id="borrowHistory" class="history-list">
+                    <!-- Borrow history will be loaded here -->
+                </div>
+
+                <div id="noHistory" class="no-books" style="display:none;">
+                    <p><i class="fas fa-history"></i> You haven't borrowed any books yet.</p>
+                    <a href="index.html" class="browse-link">
+                        <i class="fas fa-search"></i> Start Browsing Books
+                    </a>
+                </div>
+
+                <div id="historyLoading" class="loading">
+                    <i class="fas fa-spinner fa-spin"></i> Loading your borrowing history...
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2025 ACity University Digital Library | My Borrows</p>
+        <p>Track your reading journey and manage borrowed books</p>
+    </footer>
+
+    <script src="script/scripts/auth.js"></script>
+    <script src="script/scripts/borrow.js"></script>
+</body>
+</html>
