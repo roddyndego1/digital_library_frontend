@@ -1,5 +1,4 @@
-// Use window.BACKEND_URL - declared once in auth.js (loaded first)
-// No local declaration needed, just use window.BACKEND_URL directly
+
 
 document.addEventListener('DOMContentLoaded', function() {
     if (!auth.isAdmin()) {

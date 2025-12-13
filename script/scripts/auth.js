@@ -1,7 +1,6 @@
-// Declare BACKEND_URL once - shared across all scripts
-window.BACKEND_URL = 'https://ibooks-digital-library-backend.onrender.com';
-// BACKEND_URL is now only declared once on window object above
-// Use window.BACKEND_URL directly throughout this file
+
+window.BACKEND_URL = 'https://digital-library-backend-t3ey.onrender.com/';
+
 
 let authModal;
 let currentUser = null;
