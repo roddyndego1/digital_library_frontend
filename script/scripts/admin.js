@@ -460,7 +460,7 @@ function createAdminBookCard(book) {
             <div class="book-cover-container">
                 <div class="book-cover">
                     <img src="${coverImage}" alt="${escapeHtml(book.title)}" class="book-cover-img" 
-                         onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&h=500&fit=fill&crop=faces';">
+                         onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=500&fit=fill&crop=faces';">
                 </div>
                 <div class="book-cover-overlay">
                     <span class="book-category-badge">${escapeHtml(book.category || 'General')}</span>
@@ -497,52 +497,64 @@ function createAdminBookCard(book) {
 }
 
 function getBookCover(book) {
-    const bookCovers = {
-        '978-0385474542': 'https://covers.openlibrary.org/b/isbn/9780385474542-L.jpg',
-        '978-1594631931': 'https://covers.openlibrary.org/b/isbn/9781594631931-L.jpg',
-        '978-0307474278': 'https://covers.openlibrary.org/b/isbn/9780307474278-L.jpg',
-        '978-0307588371': 'https://covers.openlibrary.org/b/isbn/9780307588371-L.jpg',
-        '978-0007200283': 'https://covers.openlibrary.org/b/isbn/9780007200283-L.jpg',
-        '978-0954702335': 'https://covers.openlibrary.org/b/isbn/9780954702335-L.jpg',
-        '978-1524763138': 'https://covers.openlibrary.org/b/isbn/9781524763138-L.jpg',
-        '978-0441013593': 'https://images.unsplash.com/photo-1532012197267-da84d127e765?w=400&h=500&fit=fill&crop=faces',
-        '978-0439023481': 'https://covers.openlibrary.org/b/isbn/9780439023481-L.jpg',
-        '978-0141439518': 'https://covers.openlibrary.org/b/isbn/9780141439518-L.jpg',
-        '978-1982137274': 'https://covers.openlibrary.org/b/isbn/9781982137274-L.jpg',
-        '978-1612680194': 'https://covers.openlibrary.org/b/isbn/9781612680194-L.jpg',
-        '978-0062316097': 'https://covers.openlibrary.org/b/isbn/9780062316097-L.jpg',
-        '978-0553380163': 'https://covers.openlibrary.org/b/isbn/9780553380163-L.jpg',
-        '978-1449474256': 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=400&h=500&fit=fill&crop=faces',
-        '978-0140481341': 'https://covers.openlibrary.org/b/isbn/9780140481341-L.jpg',
-        '978-0262043793': 'https://images.unsplash.com/photo-1517077304055-6e89abbf09b0?w=400&h=500&fit=fill&crop=faces',
-        '978-1285741550': 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=400&h=500&fit=fill&crop=faces',
-        '978-0134042282': 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=400&h=500&fit=fill&crop=faces',
-    };
-    
-    if (book.isbn && bookCovers[book.isbn]) {
-        return bookCovers[book.isbn];
+    const randomBookCovers = [
+        'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=500&fit=fill&crop=faces',
+        'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=400&h=500&fit=fill&crop=faces',
+        'https://images.unsplash.com/photo-1532012197267-da84d127e765?w=400&h=500&fit=fill&crop=faces',
+        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=500&fit=fill&crop=faces',
+        'https://images.unsplash.com/photo-1541963463532-d68292c34b19?w=400&h=500&fit=fill&crop=faces',
+        'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=400&h=500&fit=fill&crop=faces',
+        'https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=400&h=500&fit=fill&crop=faces',
+        'https://images.unsplash.com/photo-1517077304055-6e89abbf09b0?w=400&h=500&fit=fill&crop=faces',
+        'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=400&h=500&fit=fill&crop=faces',
+        'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=400&h=500&fit=fill&crop=faces',
+        'https://images.unsplash.com/photo-1519682337058-a94d519337bc?w=400&h=500&fit=fill&crop=faces',
+        'https://images.unsplash.com/photo-1516979187457-637abb4f9353?w=400&h=500&fit=fill&crop=faces',
+        'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=500&fit=fill&crop=faces',
+        'https://images.unsplash.com/photo-1506880018603-83d5b814b5a6?w=400&h=500&fit=fill&crop=faces',
+        'https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=400&h=500&fit=fill&crop=faces',
+        'https://images.unsplash.com/photo-1518373714866-3f1478910cc0?w=400&h=500&fit=fill&crop=faces',
+        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=500&fit=fill&crop=faces',
+        'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=400&h=500&fit=fill&crop=faces',
+        'https://images.unsplash.com/photo-1532012197267-da84d127e765?w=400&h=500&fit=fill&crop=faces',
+        'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=500&fit=fill&crop=faces',
+        'https://images.unsplash.com/photo-1541963463532-d68292c34b19?w=400&h=500&fit=fill&crop=faces',
+        'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=400&h=500&fit=fill&crop=faces',
+        'https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=400&h=500&fit=fill&crop=faces',
+        'https://images.unsplash.com/photo-1517077304055-6e89abbf09b0?w=400&h=500&fit=fill&crop=faces',
+        'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=400&h=500&fit=fill&crop=faces',
+        'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=400&h=500&fit=fill&crop=faces',
+        'https://images.unsplash.com/photo-1519682337058-a94d519337bc?w=400&h=500&fit=fill&crop=faces',
+        'https://images.unsplash.com/photo-1516979187457-637abb4f9353?w=400&h=500&fit=fill&crop=faces',
+        'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=500&fit=fill&crop=faces',
+        'https://images.unsplash.com/photo-1506880018603-83d5b814b5a6?w=400&h=500&fit=fill&crop=faces',
+    ];
+
+    if (book.id) {
+        const index = book.id % randomBookCovers.length;
+        return randomBookCovers[index];
     }
     
     const categoryImages = {
-        'Fiction': 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&h=500&fit=fill&crop=faces',
-        'African Literature': 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=400&h=500&fit=fill&crop=faces',
-        'Science Fiction': 'https://images.unsplash.com/photo-1532012197267-da84d127e765?w=400&h=500&fit=fill&crop=faces',
-        'Biography': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=500&fit=fill&crop=faces',
-        'Mystery': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=500&fit=fill&crop=faces',
-        'Thriller': 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&h=500&fit=fill&crop=faces',
-        'Romance': 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=400&h=500&fit=fill&crop=faces',
-        'Self-Help': 'https://images.unsplash.com/photo-1541963463532-d68292c34b19?w=400&h=500&fit=fill&crop=faces',
-        'Business': 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=400&h=500&fit=fill&crop=faces',
-        'History': 'https://images.unsplash.com/photo-1541963463532-d68292c34b19?w=400&h=500&fit=fill&crop=faces',
-        'Science': 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=400&h=500&fit=fill&crop=faces',
-        'Poetry': 'https://images.unsplash.com/photo-1516979187457-637abb4f9353?w=400&h=500&fit=fill&crop=faces',
-        'Drama': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=500&fit=fill&crop=faces',
-        'Computer Science': 'https://images.unsplash.com/photo-1517077304055-6e89abbf09b0?w=400&h=500&fit=fill&crop=faces',
-        'Mathematics': 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=400&h=500&fit=fill&crop=faces',
-        'Chemistry': 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=400&h=500&fit=fill&crop=faces'
+        'Fiction': 'https://images.unsplash.com/photo-1519682337058-a94d519337bc?w=400&h=500&fit=fill&crop=faces',
+        'African Literature': 'https://images.unsplash.com/photo-1516979187457-637abb4f9353?w=400&h=500&fit=fill&crop=faces',
+        'Science Fiction': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=500&fit=fill&crop=faces',
+        'Biography': 'https://images.unsplash.com/photo-1541963463532-d68292c34b19?w=400&h=500&fit=fill&crop=faces',
+        'Mystery': 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=400&h=500&fit=fill&crop=faces',
+        'Thriller': 'https://images.unsplash.com/photo-1532012197267-da84d127e765?w=400&h=500&fit=fill&crop=faces',
+        'Romance': 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=400&h=500&fit=fill&crop=faces',
+        'Self-Help': 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=400&h=500&fit=fill&crop=faces',
+        'Business': 'https://images.unsplash.com/photo-1541963463532-d68292c34b19?w=400&h=500&fit=fill&crop=faces',
+        'History': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=500&fit=fill&crop=faces',
+        'Science': 'https://images.unsplash.com/photo-1517077304055-6e89abbf09b0?w=400&h=500&fit=fill&crop=faces',
+        'Poetry': 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=400&h=500&fit=fill&crop=faces',
+        'Drama': 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=400&h=500&fit=fill&crop=faces',
+        'Computer Science': 'https://images.unsplash.com/photo-1519682337058-a94d519337bc?w=400&h=500&fit=fill&crop=faces',
+        'Mathematics': 'https://images.unsplash.com/photo-1516979187457-637abb4f9353?w=400&h=500&fit=fill&crop=faces',
+        'Chemistry': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=500&fit=fill&crop=faces'
     };
     
-    return categoryImages[book.category] || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&h=500&fit=fill&crop=faces';
+    return categoryImages[book.category] || 'https://images.unsplash.com/photo-1519682337058-a94d519337bc?w=400&h=500&fit=fill&crop=faces';
 }
 
 async function handleAddBook(e) {
