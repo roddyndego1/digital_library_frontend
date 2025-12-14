@@ -8,6 +8,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     setupTabs();
+    // Hide the regular "My profile" UI on the admin panel
+    const userProfile = document.getElementById('userProfile');
+    if (userProfile) userProfile.style.display = 'none';
     loadAdminStats();
     loadRecentActivity();
     loadAdminBooks();
