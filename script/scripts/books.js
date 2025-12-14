@@ -1,6 +1,4 @@
 
-
-
 document.addEventListener('DOMContentLoaded', function () {
     loadBooks();
     setupEventListeners();
@@ -233,7 +231,7 @@ async function borrowBook(bookId) {
     }
 
     try {
-        const response = await fetch(`${getBackendUrl()}/borrow/${bookId}`, {
+        const response = await fetch(`${window.BACKEND_URL}/borrow/${bookId}`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -241,10 +239,20 @@ async function borrowBook(bookId) {
             }
         });
 
-        const data = await response.json();
+        let data;
+        try {
+            data = await response.json();
+        } catch (jsonError) {
+            const text = await response.text();
+            alert(`Server error: ${response.status} ${response.statusText}. ${text || 'Please try again.'}`);
+            console.error('Borrow response parse error:', jsonError, text);
+            return;
+        }
 
         if (response.ok) {
-            const dueDate = new Date(data.due_date).toLocaleDateString();
+            const record = data.borrowRecord || data;
+            const dueDateRaw = record.due_date || record.dueDate || record.due;
+            const dueDate = dueDateRaw ? new Date(dueDateRaw).toLocaleDateString() : 'N/A';
             alert(`Book borrowed successfully!\nDue date: ${dueDate}`);
             loadBooks();
         } else {
