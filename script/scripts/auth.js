@@ -180,6 +180,10 @@ async function handleLogin(e) {
             messageElement.textContent = '';
             
             showNavbar();
+            if (data.role === 'admin') {
+                window.location.href = 'admin.html';
+                return;
+            }
         } else {
             messageElement.textContent = data.message || 'Login failed';
             messageElement.style.color = 'red';
