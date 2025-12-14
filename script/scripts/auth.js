@@ -1,5 +1,5 @@
 
-window.BACKEND_URL = 'https://ibooks-backend-server.onrender.com/';
+window.BACKEND_URL = 'https://ibooks-backend-server.onrender.com';
 
 
 let authModal;
